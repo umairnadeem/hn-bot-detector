@@ -22,7 +22,6 @@ export async function fetchPostComments(
   let page = 0;
   const hitsPerPage = 100;
 
-  // Paginate to get all comments (up to 500 to avoid excessive requests)
   while (page < 5) {
     const url = `${BASE_URL}/search?tags=comment,story_${postId}&hitsPerPage=${hitsPerPage}&page=${page}`;
     const res = await fetch(url);
@@ -55,11 +54,9 @@ export function stripHtml(html: string): string {
 }
 
 export function extractPostId(input: string): string {
-  // Handle full URLs like https://news.ycombinator.com/item?id=12345
   const urlMatch = input.match(/item\?id=(\d+)/);
   if (urlMatch) return urlMatch[1];
 
-  // Handle plain numeric IDs
   const numMatch = input.match(/^(\d+)$/);
   if (numMatch) return numMatch[1];
 

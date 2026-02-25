@@ -3,19 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --hn-orange: #ff6600;
-  --hn-bg: #f6f6ef;
-  --hn-text: #000000;
-  --hn-link: #000000;
-  --hn-muted: #828282;
-  --hn-border: #e0e0e0;
-  --hn-white: #ffffff;
-  /* override Next.js defaults */
   --background: #f6f6ef;
   --foreground: #000000;
 }
 
-/* kill dark mode overrides */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #f6f6ef;
@@ -28,7 +19,6 @@
   box-sizing: border-box;
 }
 
-/* prevent horizontal overflow from long words/URLs */
 body {
   overflow-wrap: break-word;
   word-wrap: break-word;
@@ -59,12 +49,6 @@ mark {
   padding: 0 2px;
 }
 
-/* subtext / muted */
-.hn-muted {
-  color: #828282;
-  font-size: 9.3px;
-}
-
 input[type="text"], input[type="search"], textarea {
   font-family: Verdana, Geneva, sans-serif;
   font-size: 9pt;
@@ -82,7 +66,6 @@ button, input[type="submit"] {
   padding: 2px 8px;
 }
 
-/* --- Responsive --- */
 @media (max-width: 768px) {
   .hn-main-table {
     width: 100% !important;
@@ -93,7 +76,6 @@ button, input[type="submit"] {
     padding: 0 4px !important;
   }
 
-  /* stack forms vertically */
   .hn-form {
     flex-direction: column !important;
   }
@@ -106,20 +88,17 @@ button, input[type="submit"] {
     width: 100% !important;
   }
 
-  /* score breakdown table: horizontal scroll */
   .hn-breakdown-table {
     display: block;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* commenter row: wrap on small screens */
   .hn-commenter-row {
     flex-wrap: wrap !important;
     gap: 4px !important;
   }
 
-  /* stats table cells */
   .hn-stats-table td {
     display: block !important;
     width: 100% !important;

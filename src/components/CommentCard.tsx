@@ -1,33 +1,9 @@
 "use client";
 
 import { CommentAnalysis } from "@/lib/types";
+import { HighlightedText } from "./HighlightedText";
 import { ScoreBadge } from "./ScoreBadge";
 import { useState } from "react";
-
-function highlightPhrases(text: string, phrases: { phrase: string }[]) {
-  if (phrases.length === 0) return text;
-
-  const patterns = phrases.map((p) =>
-    p.phrase
-      .replace(/^Sentence starting with "/, "")
-      .replace(/"$/, "")
-      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  );
-  const regex = new RegExp(`(${patterns.join("|")})`, "gi");
-
-  const parts = text.split(regex);
-  return parts.map((part, i) => {
-    if (regex.test(part)) {
-      return (
-        <mark key={i}>
-          {part}
-        </mark>
-      );
-    }
-    regex.lastIndex = 0;
-    return part;
-  });
-}
 
 export function CommentCard({ analysis }: { analysis: CommentAnalysis }) {
   const [expanded, setExpanded] = useState(false);
@@ -79,10 +55,10 @@ export function CommentCard({ analysis }: { analysis: CommentAnalysis }) {
       >
         {cleanText.length > 300 && !expanded ? (
           <>
-            {highlightPhrases(
-              cleanText.slice(0, 300) + "...",
-              flaggedPhrases
-            )}
+            <HighlightedText
+              text={cleanText.slice(0, 300) + "..."}
+              phrases={flaggedPhrases}
+            />
             <span
               onClick={() => setExpanded(true)}
               style={{
@@ -95,7 +71,7 @@ export function CommentCard({ analysis }: { analysis: CommentAnalysis }) {
             </span>
           </>
         ) : (
-          highlightPhrases(cleanText, flaggedPhrases)
+          <HighlightedText text={cleanText} phrases={flaggedPhrases} />
         )}
       </div>
 

@@ -1,7 +1,3 @@
-/**
- * TF-IDF cosine similarity for detecting repetitive comment patterns.
- */
-
 interface TFIDFVector {
   [term: string]: number;
 }
@@ -19,7 +15,6 @@ function termFrequency(tokens: string[]): Record<string, number> {
   for (const token of tokens) {
     tf[token] = (tf[token] || 0) + 1;
   }
-  // Normalize by document length
   const len = tokens.length || 1;
   for (const term in tf) {
     tf[term] /= len;
@@ -33,7 +28,6 @@ function inverseDocumentFrequency(
   const idf: Record<string, number> = {};
   const n = documents.length;
 
-  // Count documents containing each term
   const docFreq: Record<string, number> = {};
   for (const doc of documents) {
     const seen = Array.from(new Set(doc));

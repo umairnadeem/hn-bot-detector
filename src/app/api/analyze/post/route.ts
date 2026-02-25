@@ -1,7 +1,6 @@
-import { fetchPostComments } from "@/lib/hn";
+import { fetchPostComments, extractPostId } from "@/lib/hn";
 import { analyzeUser } from "@/lib/scoring";
-import { extractPostId } from "@/lib/hn";
-import { HNComment, PostAnalysis, Verdict } from "@/lib/types";
+import { HNComment, PostAnalysis } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -18,7 +17,6 @@ export async function GET(request: NextRequest) {
     const postId = extractPostId(id);
     const comments = await fetchPostComments(postId);
 
-    // Group comments by author
     const byAuthor = new Map<string, HNComment[]>();
     for (const comment of comments) {
       const existing = byAuthor.get(comment.author) || [];
@@ -28,21 +26,19 @@ export async function GET(request: NextRequest) {
 
     const useOpenAI = !!process.env.OPENAI_API_KEY;
 
-    // Analyze each commenter
     const commenterAnalyses = await Promise.all(
       Array.from(byAuthor.entries()).map(async ([username, userComments]) => {
         const analysis = await analyzeUser(userComments, useOpenAI);
         return {
           username,
           averageScore: analysis.averageScore,
-          verdict: analysis.verdict as Verdict,
+          verdict: analysis.verdict,
           commentCount: userComments.length,
           comments: analysis.comments,
         };
       })
     );
 
-    // Sort by highest bot score first
     commenterAnalyses.sort((a, b) => b.averageScore - a.averageScore);
 
     const storyTitle = comments[0]?.story_title || null;

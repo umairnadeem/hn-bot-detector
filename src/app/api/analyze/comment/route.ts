@@ -6,11 +6,9 @@ import { NextRequest, NextResponse } from "next/server";
 const ALGOLIA_ITEMS_URL = "https://hn.algolia.com/api/v1/items";
 
 function extractCommentId(input: string): string {
-  // Handle full URLs like https://news.ycombinator.com/item?id=39876543
   const urlMatch = input.match(/item\?id=(\d+)/);
   if (urlMatch) return urlMatch[1];
 
-  // Handle plain numeric IDs
   const numMatch = input.trim().match(/^(\d+)$/);
   if (numMatch) return numMatch[1];
 
@@ -32,7 +30,6 @@ interface AlgoliaItem {
   points: number | null;
 }
 
-// POST /api/analyze/comment — analyze raw pasted text (no HN URL needed)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -126,7 +123,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Convert Algolia item format to HNComment format for the scoring pipeline
     const hnComment = {
       objectID: String(item.id),
       author: item.author,

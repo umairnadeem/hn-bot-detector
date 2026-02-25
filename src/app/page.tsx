@@ -2,36 +2,11 @@
 
 import { useState } from "react";
 import { UserAnalysis, SingleCommentAnalysis } from "@/lib/types";
+import { exportJSON } from "@/lib/utils";
 import { CommentCard } from "@/components/CommentCard";
+import { HighlightedText } from "@/components/HighlightedText";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { ScoreBadge } from "@/components/ScoreBadge";
-
-function highlightPhrases(text: string, phrases: { phrase: string }[]) {
-  if (phrases.length === 0) return text;
-
-  const patterns = phrases.map((p) =>
-    p.phrase
-      .replace(/^Sentence starting with "/, "")
-      .replace(/"$/, "")
-      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  );
-  const regex = new RegExp(`(${patterns.join("|")})`, "gi");
-
-  const parts = text.split(regex);
-  return parts.map((part, i) => {
-    if (regex.test(part)) {
-      return (
-        <mark key={i}>
-          {part}
-        </mark>
-      );
-    }
-    regex.lastIndex = 0;
-    return part;
-  });
-}
-
-// --- Comment Lookup (Hero) ---
 
 function CommentLookup() {
   const [mode, setMode] = useState<"url" | "text">("url");
@@ -51,16 +26,16 @@ function CommentLookup() {
     setResult(null);
 
     try {
-      let res: Response;
-      if (mode === "url") {
-        res = await fetch(`/api/analyze/comment?id=${encodeURIComponent(value)}`);
-      } else {
-        res = await fetch("/api/analyze/comment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: value }),
-        });
-      }
+      const res =
+        mode === "url"
+          ? await fetch(
+              `/api/analyze/comment?id=${encodeURIComponent(value)}`
+            )
+          : await fetch("/api/analyze/comment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: value }),
+            });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Analysis failed");
       setResult(data);
@@ -81,19 +56,31 @@ function CommentLookup() {
       })
     : "";
 
-  const tabStyle = (active: boolean) => ({
+  const tabStyle = (active: boolean): React.CSSProperties => ({
     display: "inline-block",
     padding: "2px 10px",
     cursor: "pointer",
     borderBottom: active ? "2px solid #ff6600" : "2px solid transparent",
-    fontWeight: active ? "bold" as const : "normal" as const,
+    fontWeight: active ? "bold" : "normal",
     color: active ? "#000" : "#828282",
     fontSize: "9pt",
     marginRight: "4px",
-    userSelect: "none" as const,
+    userSelect: "none",
   });
 
   const hasValue = mode === "url" ? input.trim() : rawText.trim();
+
+  const buttonStyle: React.CSSProperties = {
+    backgroundColor: "#ff6600",
+    color: "#000",
+    border: "none",
+    padding: "4px 16px",
+    fontSize: "9pt",
+    fontWeight: "bold",
+    cursor: loading || !hasValue ? "not-allowed" : "pointer",
+    opacity: loading || !hasValue ? 0.5 : 1,
+    whiteSpace: "nowrap",
+  };
 
   return (
     <div>
@@ -101,12 +88,25 @@ function CommentLookup() {
         <b>Is this comment written by an LLM?</b>
       </div>
 
-      {/* tabs */}
       <div style={{ marginBottom: "8px", borderBottom: "1px solid #e0e0e0" }}>
-        <span onClick={() => { setMode("url"); setResult(null); setError(null); }} style={tabStyle(mode === "url")}>
+        <span
+          onClick={() => {
+            setMode("url");
+            setResult(null);
+            setError(null);
+          }}
+          style={tabStyle(mode === "url")}
+        >
           HN url / id
         </span>
-        <span onClick={() => { setMode("text"); setResult(null); setError(null); }} style={tabStyle(mode === "text")}>
+        <span
+          onClick={() => {
+            setMode("text");
+            setResult(null);
+            setError(null);
+          }}
+          style={tabStyle(mode === "text")}
+        >
           paste text
         </span>
       </div>
@@ -129,21 +129,7 @@ function CommentLookup() {
                 background: "#fff",
               }}
             />
-            <button
-              type="submit"
-              disabled={loading || !hasValue}
-              style={{
-                backgroundColor: "#ff6600",
-                color: "#000",
-                border: "none",
-                padding: "4px 16px",
-                fontSize: "9pt",
-                fontWeight: "bold",
-                cursor: loading || !hasValue ? "not-allowed" : "pointer",
-                opacity: loading || !hasValue ? 0.5 : 1,
-                whiteSpace: "nowrap",
-              }}
-            >
+            <button type="submit" disabled={loading || !hasValue} style={buttonStyle}>
               {loading ? "analyzing..." : "analyze"}
             </button>
           </div>
@@ -167,20 +153,7 @@ function CommentLookup() {
                 boxSizing: "border-box",
               }}
             />
-            <button
-              type="submit"
-              disabled={loading || !hasValue}
-              style={{
-                backgroundColor: "#ff6600",
-                color: "#000",
-                border: "none",
-                padding: "4px 16px",
-                fontSize: "9pt",
-                fontWeight: "bold",
-                cursor: loading || !hasValue ? "not-allowed" : "pointer",
-                opacity: loading || !hasValue ? 0.5 : 1,
-              }}
-            >
+            <button type="submit" disabled={loading || !hasValue} style={buttonStyle}>
               {loading ? "analyzing..." : "analyze"}
             </button>
           </div>
@@ -215,7 +188,6 @@ function CommentLookup() {
             padding: "10px",
           }}
         >
-          {/* Header: verdict + score */}
           <div
             style={{
               display: "flex",
@@ -231,7 +203,6 @@ function CommentLookup() {
             <ScoreBadge score={result.score} />
           </div>
 
-          {/* Comment metadata */}
           <div
             style={{
               fontSize: "12px",
@@ -248,17 +219,18 @@ function CommentLookup() {
               {result.author}
             </a>
             <span style={{ marginLeft: "8px" }}>{date}</span>
-            <a
-              href={result.hnUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: "#828282", marginLeft: "8px" }}
-            >
-              (view on HN)
-            </a>
+            {result.hnUrl && (
+              <a
+                href={result.hnUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#828282", marginLeft: "8px" }}
+              >
+                (view on HN)
+              </a>
+            )}
           </div>
 
-          {/* Comment text with highlighted phrases */}
           <div
             style={{
               fontSize: "13px",
@@ -270,10 +242,12 @@ function CommentLookup() {
               fontFamily: "Verdana, Geneva, sans-serif",
             }}
           >
-            {highlightPhrases(result.cleanText, result.flaggedPhrases)}
+            <HighlightedText
+              text={result.cleanText}
+              phrases={result.flaggedPhrases}
+            />
           </div>
 
-          {/* Flagged phrases */}
           {result.flaggedPhrases.length > 0 && (
             <div style={{ marginBottom: "8px" }}>
               {result.flaggedPhrases.map((fp, i) => (
@@ -291,8 +265,7 @@ function CommentLookup() {
             </div>
           )}
 
-          {/* Score breakdown */}
-          {result.breakdown.details.length > 0 && (
+          {result.breakdown.details.length > 0 ? (
             <div
               style={{
                 background: "#f6f6ef",
@@ -304,7 +277,6 @@ function CommentLookup() {
                 SCORE BREAKDOWN
               </b>
 
-              {/* Category scores */}
               <table
                 className="hn-breakdown-table"
                 style={{
@@ -347,7 +319,6 @@ function CommentLookup() {
                 </tbody>
               </table>
 
-              {/* Detail lines */}
               <ul
                 style={{
                   margin: 0,
@@ -361,9 +332,7 @@ function CommentLookup() {
                 ))}
               </ul>
             </div>
-          )}
-
-          {result.breakdown.details.length === 0 && (
+          ) : (
             <div
               style={{
                 background: "#f6f6ef",
@@ -383,8 +352,6 @@ function CommentLookup() {
     </div>
   );
 }
-
-// --- Username Analyzer (Secondary) ---
 
 function UsernameAnalyzer() {
   const [username, setUsername] = useState("");
@@ -412,19 +379,6 @@ function UsernameAnalyzer() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function exportJSON() {
-    if (!result) return;
-    const blob = new Blob([JSON.stringify(result, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `hn-bot-analysis-${result.username}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   return (
@@ -596,7 +550,9 @@ function UsernameAnalyzer() {
                       textAlign: "center",
                     }}
                   >
-                    <b style={{ fontSize: "16px" }}>{result.similarityScore}</b>
+                    <b style={{ fontSize: "16px" }}>
+                      {result.similarityScore}
+                    </b>
                     <br />
                     <span style={{ color: "#828282" }}>similarity score</span>
                   </td>
@@ -606,7 +562,12 @@ function UsernameAnalyzer() {
 
             <div style={{ textAlign: "right" }}>
               <span
-                onClick={exportJSON}
+                onClick={() =>
+                  exportJSON(
+                    result,
+                    `hn-bot-analysis-${result.username}.json`
+                  )
+                }
                 style={{
                   color: "#828282",
                   fontSize: "12px",
@@ -631,18 +592,17 @@ function UsernameAnalyzer() {
   );
 }
 
-// --- Page ---
-
 export default function HomePage() {
   return (
     <div>
-      {/* Hero: Comment Lookup */}
       <CommentLookup />
-
-      {/* Divider */}
-      <hr style={{ border: "none", borderTop: "1px solid #ff6600", margin: "16px 0" }} />
-
-      {/* Secondary: Username Analyzer */}
+      <hr
+        style={{
+          border: "none",
+          borderTop: "1px solid #ff6600",
+          margin: "16px 0",
+        }}
+      />
       <UsernameAnalyzer />
     </div>
   );

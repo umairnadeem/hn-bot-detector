@@ -9,8 +9,6 @@ import {
   Verdict,
 } from "./types";
 
-// --- LLM-Characteristic Phrases ---
-
 const LLM_PHRASES: string[] = [
   "at its core",
   "it is worth noting",
@@ -68,8 +66,6 @@ const LLM_PHRASES: string[] = [
   "the underlying insight",
 ];
 
-// --- Character N-gram TF-IDF Vector Similarity ---
-
 interface NGramVector {
   [ngram: string]: number;
 }
@@ -85,13 +81,11 @@ function charNgrams(text: string, n: number): string[] {
 
 function buildNgramVector(text: string): NGramVector {
   const vec: NGramVector = {};
-  // Use character n-grams of sizes 2, 3, and 4
   for (const n of [2, 3, 4]) {
     for (const gram of charNgrams(text, n)) {
       vec[gram] = (vec[gram] || 0) + 1;
     }
   }
-  // Normalize to TF
   const values = Object.values(vec);
   const total = values.reduce((a, b) => a + b, 0) || 1;
   for (const k of Object.keys(vec)) {
@@ -120,17 +114,14 @@ function cosineSim(a: NGramVector, b: NGramVector): number {
   return denom === 0 ? 0 : dot / denom;
 }
 
-// Pre-compute vectors for all LLM phrases
 const PHRASE_VECTORS: { phrase: string; vector: NGramVector }[] =
   LLM_PHRASES.map((phrase) => ({
     phrase,
     vector: buildNgramVector(phrase),
   }));
 
-// Points assigned per phrase by category
 const PHRASE_POINTS: Record<string, number> = {};
 for (const p of LLM_PHRASES) {
-  // Multi-word phrases get more points than single-word buzzwords
   PHRASE_POINTS[p] = p.includes(" ") ? 10 : 6;
 }
 
@@ -140,11 +131,9 @@ function extractWordWindows(text: string): { window: string; index: number }[] {
   let charPos = 0;
 
   for (let i = 0; i < words.length; i++) {
-    // Find actual position of this word in original text
     const wordStart = text.indexOf(words[i], charPos);
     charPos = wordStart + words[i].length;
 
-    // Generate windows of size 2 through 5 (bigrams to 5-grams)
     for (let size = 2; size <= 5 && i + size <= words.length; size++) {
       const windowWords = words.slice(i, i + size);
       windows.push({
@@ -152,7 +141,6 @@ function extractWordWindows(text: string): { window: string; index: number }[] {
         index: wordStart,
       });
     }
-    // Also include single words (for single-word buzzwords)
     windows.push({ window: words[i], index: wordStart });
   }
 
@@ -200,7 +188,6 @@ function detectPhrases(text: string): {
     }
   }
 
-  // Check for 3-part structure (thesis, body, conclusion)
   const paragraphs = text.split(/\n\n+/).filter((p) => p.trim().length > 0);
   if (paragraphs.length === 3) {
     const [first, , third] = paragraphs;
@@ -217,8 +204,6 @@ function detectPhrases(text: string): {
 
   return { score: Math.min(score, 40), flagged, details, matchedPhrases };
 }
-
-// --- New Signals ---
 
 function detectCurlyQuotes(text: string): {
   score: number;
@@ -240,17 +225,14 @@ function detectNumberedLists(text: string): {
   score: number;
   details: string[];
 } {
-  // Detect numbered list items: lines starting with "N. " or inline "N. "
   const numberedItems = text.match(/(?:^|\n)\s*(\d+)\.\s/g);
   if (!numberedItems || numberedItems.length < 2) return { score: 0, details: [] };
 
-  // Extract the actual numbers to verify sequential pattern
   const numbers = numberedItems.map((m) => {
     const match = m.match(/(\d+)/);
     return match ? parseInt(match[1], 10) : 0;
   });
 
-  // Check that it starts with 1 and has 2
   const has1 = numbers.includes(1);
   const has2 = numbers.includes(2);
   if (!has1 || !has2) return { score: 0, details: [] };
@@ -269,17 +251,10 @@ function detectExamplesInThrees(text: string): {
   score: number;
   details: string[];
 } {
-  // Pattern 1: "for example, X, Y, and Z"
   const forExampleThree =
     /for example,?\s+\w[\w\s]*,\s+\w[\w\s]*,\s+and\s+\w/i;
 
-  // Pattern 2: "such as X, Y, and Z"
   const suchAsThree = /such as\s+\w[\w\s]*,\s+\w[\w\s]*,\s+and\s+\w/i;
-
-  // Pattern 3: "X, Y, and Z" — generic three-item comma list ending with "and"
-  const threeItemList = /\w+,\s+\w+,\s+and\s+\w+/i;
-
-  // Pattern 4: exactly 3 bullet/numbered points (but not more)
   const bulletPoints = text.match(/(?:^|\n)\s*[-•*]\s+.+/g);
   const exactlyThreeBullets = bulletPoints && bulletPoints.length === 3;
 
@@ -294,7 +269,6 @@ function detectExamplesInThrees(text: string): {
     };
   }
 
-  // For the generic 3-item list, only count if there are multiple such patterns
   const threeItemMatches = text.match(
     /\w+,\s+\w+,\s+and\s+\w+/gi
   );
@@ -326,7 +300,6 @@ function detectEnDash(text: string): {
   score: number;
   details: string[];
 } {
-  // En-dash (–) used as a clause separator — LLMs substitute this for em-dash
   const enDashCount = (text.match(/\u2013/g) || []).length;
   if (enDashCount === 0) return { score: 0, details: [] };
   const pts = Math.min(enDashCount * 5, 15);
@@ -340,7 +313,6 @@ function detectArrow(text: string): {
   score: number;
   details: string[];
 } {
-  // → (U+2192) is a strong LLM signal — used to show logical flow
   const arrowCount = (text.match(/\u2192/g) || []).length;
   if (arrowCount === 0) return { score: 0, details: [] };
   const pts = Math.min(arrowCount * 10, 20);
@@ -357,7 +329,6 @@ function detectThreeParagraphStructure(text: string): {
   const paragraphs = text.split(/\n\n+/).map((p) => p.trim()).filter((p) => p.length > 0);
   if (paragraphs.length !== 3) return { score: 0, details: [] };
 
-  // Count sentences per paragraph (split on . ! ? followed by space or end)
   const sentenceCount = (p: string) =>
     (p.match(/[.!?](?:\s|$)/g) || []).length || 1;
 
@@ -378,7 +349,6 @@ function detectFalsePersonalFraming(text: string): {
   score: number;
   details: string[];
 } {
-  // LLMs fake personal experience then pivot to generic claims
   const falsePhrases = [
     /in practice,?\s+i'?ve found/i,
     /in my experience,?\s+(the|this|it|most|many)/i,
@@ -402,8 +372,6 @@ function detectFalsePersonalFraming(text: string): {
   };
 }
 
-// --- Structural Signals ---
-
 function analyzeStructure(text: string): {
   score: number;
   details: string[];
@@ -411,7 +379,6 @@ function analyzeStructure(text: string): {
   let score = 0;
   const details: string[] = [];
 
-  // No contractions check
   const commonContractions =
     /\b(don't|doesn't|won't|can't|shouldn't|wouldn't|couldn't|isn't|aren't|wasn't|weren't|haven't|hasn't|hadn't|I'm|I've|I'd|I'll|we're|we've|they're|they've|it's|that's|there's|what's|who's|let's)\b/i;
   if (!commonContractions.test(text) && text.length > 100) {
@@ -419,7 +386,6 @@ function analyzeStructure(text: string): {
     details.push("No contractions used (+10)");
   }
 
-  // Word count consistency check (for single comment, just flag the range)
   const wordCount = text.split(/\s+/).length;
   if (wordCount >= 150 && wordCount <= 400) {
     score += 5;
@@ -428,7 +394,6 @@ function analyzeStructure(text: string): {
     );
   }
 
-  // No personal anecdotes (negative signal — reduces score)
   const personalAnecdotes =
     /\b(I once|at my company|last week I|in my experience|I remember when|at my job|my team|I personally)\b/i;
   if (personalAnecdotes.test(text)) {
@@ -438,8 +403,6 @@ function analyzeStructure(text: string): {
 
   return { score: Math.max(score, 0), details };
 }
-
-// --- Timing Signals ---
 
 function analyzeTimings(comments: HNComment[]): {
   score: number;
@@ -454,7 +417,6 @@ function analyzeTimings(comments: HNComment[]): {
     .map((c) => c.created_at_i)
     .sort((a, b) => a - b);
 
-  // Comments in 24h window
   const now = timestamps[timestamps.length - 1];
   const last24h = timestamps.filter((t) => now - t < 86400);
   if (last24h.length > 5) {
@@ -462,14 +424,12 @@ function analyzeTimings(comments: HNComment[]): {
     details.push(`${last24h.length} comments in 24h window (+20)`);
   }
 
-  // Comments in 7d window
   const last7d = timestamps.filter((t) => now - t < 604800);
   if (last7d.length > 15) {
     score += 15;
     details.push(`${last7d.length} comments in 7-day window (+15)`);
   }
 
-  // Average interval
   const intervals: number[] = [];
   for (let i = 1; i < timestamps.length; i++) {
     intervals.push(timestamps[i] - timestamps[i - 1]);
@@ -486,8 +446,6 @@ function analyzeTimings(comments: HNComment[]): {
 
   return { score: Math.min(score, 50), details };
 }
-
-// --- OpenAI Detection (optional) ---
 
 async function openaiDetection(
   text: string
@@ -548,8 +506,6 @@ async function openaiDetection(
   }
 }
 
-// --- Anthropic Detection (optional) ---
-
 async function anthropicDetection(
   text: string
 ): Promise<{ score: number; details: string[] }> {
@@ -593,7 +549,6 @@ ${text}`,
     const data = await res.json();
     const content = data.content?.[0]?.text || "";
 
-    // strip any markdown code fences if present
     const jsonStr = content.replace(/```json?\n?|\n?```/g, "").trim();
     let parsed: { score: number; reasons: string[] };
     try {
@@ -617,48 +572,6 @@ ${text}`,
     return { score: 0, details: [`Anthropic detection failed: ${msg}`] };
   }
 }
-
-// --- Exported: Get Phrase Matches ---
-
-export function getPhraseMatches(text: string): string[] {
-  const { matchedPhrases } = detectPhrases(text);
-  const result = [...matchedPhrases];
-
-  // Also include new signal pattern labels
-  const curlyQuotePattern = /[\u201C\u201D\u2018\u2019]/g;
-  if (curlyQuotePattern.test(text)) {
-    result.push("smart/curly quotes");
-  }
-
-  const numberedItems = text.match(/(?:^|\n)\s*(\d+)\.\s/g);
-  if (numberedItems && numberedItems.length >= 2) {
-    result.push("numbered list");
-  }
-
-  const { score: threesScore } = detectExamplesInThrees(text);
-  if (threesScore > 0) {
-    result.push("examples in threes");
-  }
-
-  const emDashCount = (text.match(/\u2014/g) || []).length;
-  if (emDashCount > 0) result.push("em dash overuse");
-
-  const enDashCount = (text.match(/\u2013/g) || []).length;
-  if (enDashCount > 0) result.push("en-dash as separator");
-
-  const arrowCount = (text.match(/\u2192/g) || []).length;
-  if (arrowCount > 0) result.push("→ arrow used");
-
-  const { score: framingScore } = detectFalsePersonalFraming(text);
-  if (framingScore > 0) result.push("false personal framing");
-
-  const { score: threeParaScore } = detectThreeParagraphStructure(text);
-  if (threeParaScore > 0) result.push("3-paragraph structure");
-
-  return result;
-}
-
-// --- Main Scoring Pipeline ---
 
 export async function scoreComment(
   comment: HNComment,
@@ -755,15 +668,11 @@ export async function analyzeUser(
 
   const username = comments[0].author;
 
-  // Score individual comments
   const analyses = await Promise.all(
     comments.map((c) => scoreComment(c, useOpenAI))
   );
 
-  // Timing analysis (across all comments)
   const timing = analyzeTimings(comments);
-
-  // Semantic similarity
   const cleanTexts = analyses
     .map((a) => a.cleanText)
     .filter((t) => t.length > 50);
@@ -783,7 +692,6 @@ export async function analyzeUser(
     );
   }
 
-  // Add timing and similarity scores to each comment's breakdown
   for (const analysis of analyses) {
     analysis.breakdown.timingSignals = timing.score;
     analysis.breakdown.semanticSimilarity = similarityScore;
@@ -797,7 +705,6 @@ export async function analyzeUser(
     );
   }
 
-  // Calculate average score (include timing and similarity in the average)
   const baseAvg =
     analyses.reduce((sum, a) => sum + a.score, 0) / analyses.length;
   const overallScore = Math.min(

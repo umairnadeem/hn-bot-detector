@@ -10,22 +10,36 @@
   --hn-muted: #828282;
   --hn-border: #e0e0e0;
   --hn-white: #ffffff;
+  /* override Next.js defaults */
+  --background: #f6f6ef;
+  --foreground: #000000;
 }
 
-* {
+/* kill dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #f6f6ef;
+    --foreground: #000000;
+  }
+}
+
+*, *::before, *::after {
   border-radius: 0 !important;
+  box-sizing: border-box;
 }
 
-body {
-  background: var(--hn-bg);
-  color: var(--hn-text);
-  font-family: Verdana, Geneva, sans-serif;
-  font-size: 13px;
+html, body {
+  background-color: #f6f6ef !important;
+  color: #000000 !important;
+  font-family: Verdana, Geneva, sans-serif !important;
+  font-size: 13.3px !important;
   line-height: 1.4;
+  margin: 0;
+  padding: 0;
 }
 
 a {
-  color: var(--hn-link);
+  color: #000000;
   text-decoration: none;
 }
 
@@ -37,4 +51,27 @@ mark {
   background: #ffffcc;
   color: #000;
   padding: 0 2px;
+}
+
+/* subtext / muted */
+.hn-muted {
+  color: #828282;
+  font-size: 9.3px;
+}
+
+input[type="text"], input[type="search"], textarea {
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 0;
+  padding: 2px 4px;
+}
+
+button, input[type="submit"] {
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 13px;
+  background: #f6f6ef;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  padding: 2px 8px;
 }

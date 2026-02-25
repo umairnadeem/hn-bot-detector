@@ -44,9 +44,9 @@ export default function RootLayout({
                         <Link
                           href="/"
                           style={{
-                            color: "#ffffff",
+                            color: "#000000",
                             fontWeight: "bold",
-                            fontSize: "14px",
+                            fontSize: "9pt",
                             textDecoration: "none",
                             marginRight: "14px",
                           }}
@@ -56,20 +56,20 @@ export default function RootLayout({
                         <Link
                           href="/"
                           style={{
-                            color: "#ffffff",
-                            fontSize: "13px",
+                            color: "#000000",
+                            fontSize: "9pt",
                             textDecoration: "none",
                             marginRight: "10px",
                           }}
                         >
                           comment lookup
                         </Link>
-                        <span style={{ color: "#ffffff" }}>|</span>
+                        <span style={{ color: "#000000" }}>|</span>
                         <Link
                           href="/post/scan"
                           style={{
-                            color: "#ffffff",
-                            fontSize: "13px",
+                            color: "#000000",
+                            fontSize: "9pt",
                             textDecoration: "none",
                             marginLeft: "10px",
                           }}

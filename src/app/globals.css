@@ -32,7 +32,7 @@ html, body {
   background-color: #f6f6ef !important;
   color: #000000 !important;
   font-family: Verdana, Geneva, sans-serif !important;
-  font-size: 13.3px !important;
+  font-size: 9pt !important;
   line-height: 1.4;
   margin: 0;
   padding: 0;
@@ -61,7 +61,7 @@ mark {
 
 input[type="text"], input[type="search"], textarea {
   font-family: Verdana, Geneva, sans-serif;
-  font-size: 13px;
+  font-size: 9pt;
   border: 1px solid #ccc;
   border-radius: 0;
   padding: 2px 4px;
@@ -69,7 +69,7 @@ input[type="text"], input[type="search"], textarea {
 
 button, input[type="submit"] {
   font-family: Verdana, Geneva, sans-serif;
-  font-size: 13px;
+  font-size: 9pt;
   background: #f6f6ef;
   border: 1px solid #ccc;
   cursor: pointer;

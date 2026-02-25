@@ -7,7 +7,6 @@ import { useState } from "react";
 function highlightPhrases(text: string, phrases: { phrase: string }[]) {
   if (phrases.length === 0) return text;
 
-  // Build a combined regex from all phrase labels
   const patterns = phrases.map((p) =>
     p.phrase
       .replace(/^Sentence starting with "/, "")
@@ -20,12 +19,11 @@ function highlightPhrases(text: string, phrases: { phrase: string }[]) {
   return parts.map((part, i) => {
     if (regex.test(part)) {
       return (
-        <mark key={i} className="bg-yellow-500/30 text-yellow-200 rounded px-0.5">
+        <mark key={i}>
           {part}
         </mark>
       );
     }
-    // Reset regex lastIndex
     regex.lastIndex = 0;
     return part;
   });
@@ -44,40 +42,57 @@ export function CommentCard({ analysis }: { analysis: CommentAnalysis }) {
   });
 
   return (
-    <div className="rounded-lg border border-[#262626] bg-[#141414] p-4">
-      <div className="flex items-start justify-between gap-4 mb-3">
-        <div className="flex items-center gap-3 text-sm text-neutral-400">
-          <a
-            href={`https://news.ycombinator.com/user?id=${comment.author}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-orange-500 hover:text-orange-400"
+    <div style={{ borderBottom: "1px solid #e0e0e0", padding: "6px 0" }}>
+      <div style={{ marginBottom: "4px" }}>
+        <a
+          href={`https://news.ycombinator.com/user?id=${comment.author}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "#ff6600", fontWeight: "bold" }}
+        >
+          {comment.author}
+        </a>
+        <span style={{ color: "#828282", marginLeft: "8px", fontSize: "12px" }}>
+          {date}
+        </span>
+        {comment.story_title && (
+          <span
+            style={{ color: "#828282", marginLeft: "8px", fontSize: "12px" }}
+            title={comment.story_title}
           >
-            {comment.author}
-          </a>
-          <span>{date}</span>
-          {comment.story_title && (
-            <span className="truncate max-w-xs" title={comment.story_title}>
-              on: {comment.story_title}
-            </span>
-          )}
-        </div>
-        <ScoreBadge score={score} />
+            on: {comment.story_title}
+          </span>
+        )}
+        <span style={{ float: "right" }}>
+          <ScoreBadge score={score} />
+        </span>
       </div>
 
-      <div className="text-sm text-neutral-300 leading-relaxed whitespace-pre-wrap mb-3">
+      <div
+        style={{
+          fontSize: "13px",
+          color: "#000",
+          whiteSpace: "pre-wrap",
+          marginBottom: "4px",
+          fontFamily: "Verdana, Geneva, sans-serif",
+        }}
+      >
         {cleanText.length > 300 && !expanded ? (
           <>
             {highlightPhrases(
               cleanText.slice(0, 300) + "...",
               flaggedPhrases
             )}
-            <button
+            <span
               onClick={() => setExpanded(true)}
-              className="text-orange-500 hover:text-orange-400 ml-1"
+              style={{
+                color: "#ff6600",
+                cursor: "pointer",
+                marginLeft: "4px",
+              }}
             >
-              show more
-            </button>
+              [more]
+            </span>
           </>
         ) : (
           highlightPhrases(cleanText, flaggedPhrases)
@@ -85,24 +100,26 @@ export function CommentCard({ analysis }: { analysis: CommentAnalysis }) {
       </div>
 
       {flaggedPhrases.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
+        <div style={{ marginBottom: "4px" }}>
           {flaggedPhrases.map((fp, i) => (
             <span
               key={i}
-              className="text-xs bg-yellow-500/10 text-yellow-500 rounded px-2 py-0.5"
+              style={{
+                color: "#ff6600",
+                fontSize: "12px",
+                marginRight: "8px",
+              }}
             >
-              {fp.phrase} (+{fp.points})
+              &quot;{fp.phrase}&quot; (+{fp.points})
             </span>
           ))}
         </div>
       )}
 
       {breakdown.details.length > 0 && (
-        <details className="text-xs text-neutral-500">
-          <summary className="cursor-pointer hover:text-neutral-400">
-            Scoring breakdown
-          </summary>
-          <ul className="mt-2 space-y-0.5 pl-4">
+        <details style={{ fontSize: "12px", color: "#828282" }}>
+          <summary style={{ cursor: "pointer" }}>scoring breakdown</summary>
+          <ul style={{ marginTop: "4px", paddingLeft: "20px" }}>
             {breakdown.details.map((d, i) => (
               <li key={i}>{d}</li>
             ))}

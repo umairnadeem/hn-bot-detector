@@ -1,18 +1,6 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
 import Link from "next/link";
-
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
 
 export const metadata: Metadata = {
   title: "HN Bot Detector",
@@ -25,30 +13,82 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
-      >
-        <nav className="border-b border-[#262626] px-6 py-4">
-          <div className="mx-auto max-w-5xl flex items-center gap-6">
-            <Link href="/" className="text-lg font-bold text-orange-500">
-              HN Bot Detector
-            </Link>
-            <Link
-              href="/"
-              className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
-            >
-              User Analyzer
-            </Link>
-            <Link
-              href="/post/scan"
-              className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
-            >
-              Post Scanner
-            </Link>
-          </div>
-        </nav>
-        <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
+    <html lang="en">
+      <body>
+        <table
+          style={{
+            width: "85%",
+            margin: "0 auto",
+            borderSpacing: 0,
+            borderCollapse: "collapse",
+          }}
+        >
+          <tbody>
+            <tr>
+              <td
+                style={{
+                  backgroundColor: "#ff6600",
+                  padding: "2px 10px",
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    borderSpacing: 0,
+                    padding: "2px",
+                  }}
+                >
+                  <tbody>
+                    <tr>
+                      <td style={{ lineHeight: "12pt" }}>
+                        <Link
+                          href="/"
+                          style={{
+                            color: "#ffffff",
+                            fontWeight: "bold",
+                            fontSize: "14px",
+                            textDecoration: "none",
+                            marginRight: "14px",
+                          }}
+                        >
+                          HN Bot Detector
+                        </Link>
+                        <Link
+                          href="/"
+                          style={{
+                            color: "#ffffff",
+                            fontSize: "13px",
+                            textDecoration: "none",
+                            marginRight: "10px",
+                          }}
+                        >
+                          comment lookup
+                        </Link>
+                        <span style={{ color: "#ffffff" }}>|</span>
+                        <Link
+                          href="/post/scan"
+                          style={{
+                            color: "#ffffff",
+                            fontSize: "13px",
+                            textDecoration: "none",
+                            marginLeft: "10px",
+                          }}
+                        >
+                          post scanner
+                        </Link>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style={{ padding: "10px 0" }}>
+                <main>{children}</main>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </body>
     </html>
   );

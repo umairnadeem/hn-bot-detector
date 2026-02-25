@@ -48,16 +48,22 @@ export default function PostAnalysisPage() {
 
   if (loading) {
     return (
-      <div className="text-center py-12 text-neutral-400">
-        <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-neutral-600 border-t-orange-500 mb-3" />
-        <p className="text-sm">Analyzing post #{postId}...</p>
+      <div style={{ color: "#828282", padding: "10px 0" }}>
+        Analyzing post #{postId}...
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
+      <div
+        style={{
+          color: "#ff0000",
+          border: "1px solid #ff0000",
+          padding: "6px 10px",
+          background: "#fff",
+        }}
+      >
         {error}
       </div>
     );
@@ -67,15 +73,27 @@ export default function PostAnalysisPage() {
 
   return (
     <div>
-      <div className="rounded-lg border border-[#262626] bg-[#141414] p-6 mb-6">
-        <div className="flex items-center justify-between mb-2">
+      <div
+        style={{
+          border: "1px solid #e0e0e0",
+          background: "#fff",
+          padding: "10px",
+          marginBottom: "10px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <div>
             {result.storyTitle && (
-              <h1 className="text-lg font-semibold mb-1">
-                {result.storyTitle}
-              </h1>
+              <b style={{ fontSize: "14px" }}>{result.storyTitle}</b>
             )}
-            <p className="text-sm text-neutral-400">
+            <br />
+            <span style={{ color: "#828282", fontSize: "12px" }}>
               Post #{result.postId} &middot; {result.commenters.length} unique
               commenters &middot;{" "}
               {result.commenters.reduce(
@@ -83,24 +101,32 @@ export default function PostAnalysisPage() {
                 0
               )}{" "}
               total comments
-            </p>
+            </span>
           </div>
-          <button
+          <span
             onClick={exportJSON}
-            className="text-xs text-neutral-400 hover:text-neutral-200 border border-[#262626] rounded px-3 py-1.5 transition-colors"
+            style={{
+              color: "#828282",
+              fontSize: "12px",
+              cursor: "pointer",
+            }}
           >
-            Export JSON
-          </button>
+            [export json]
+          </span>
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div>
         {result.commenters.map((commenter) => (
           <div
             key={commenter.username}
-            className="rounded-lg border border-[#262626] bg-[#141414]"
+            style={{
+              border: "1px solid #e0e0e0",
+              background: "#fff",
+              marginBottom: "2px",
+            }}
           >
-            <button
+            <div
               onClick={() =>
                 setExpandedUser(
                   expandedUser === commenter.username
@@ -108,20 +134,26 @@ export default function PostAnalysisPage() {
                     : commenter.username
                 )
               }
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-[#1a1a1a] transition-colors rounded-lg"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "6px 10px",
+                cursor: "pointer",
+              }}
             >
-              <div className="flex items-center gap-4">
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <ScoreBadge score={commenter.averageScore} />
                 <a
                   href={`https://news.ycombinator.com/user?id=${commenter.username}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium text-orange-500 hover:text-orange-400"
+                  style={{ color: "#ff6600", fontWeight: "bold" }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   {commenter.username}
                 </a>
-                <span className="text-xs text-neutral-500">
+                <span style={{ color: "#828282", fontSize: "12px" }}>
                   {commenter.commentCount} comment
                   {commenter.commentCount !== 1 ? "s" : ""}
                 </span>
@@ -139,10 +171,15 @@ export default function PostAnalysisPage() {
                       : Math.min(99, Math.round(90 - commenter.averageScore))
                 }
               />
-            </button>
+            </div>
 
             {expandedUser === commenter.username && (
-              <div className="border-t border-[#262626] p-4 space-y-3">
+              <div
+                style={{
+                  borderTop: "1px solid #e0e0e0",
+                  padding: "6px 10px",
+                }}
+              >
                 {commenter.comments
                   .sort((a, b) => b.score - a.score)
                   .map((analysis, i) => (

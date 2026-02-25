@@ -21,10 +21,7 @@ function highlightPhrases(text: string, phrases: { phrase: string }[]) {
   return parts.map((part, i) => {
     if (regex.test(part)) {
       return (
-        <mark
-          key={i}
-          className="bg-yellow-500/30 text-yellow-200 rounded px-0.5"
-        >
+        <mark key={i}>
           {part}
         </mark>
       );
@@ -76,50 +73,88 @@ function CommentLookup() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">
-          Is this comment written by an LLM?
-        </h1>
-        <p className="text-neutral-400 text-sm">
+      <div style={{ marginBottom: "10px" }}>
+        <b style={{ fontSize: "14px" }}>Is this comment written by an LLM?</b>
+        <br />
+        <span style={{ color: "#828282", fontSize: "12px" }}>
           Paste any Hacker News comment URL or ID to see how it scores for
           LLM-like patterns.
-        </p>
+        </span>
       </div>
 
-      <form onSubmit={analyze} className="flex gap-3 mb-6">
+      <form
+        onSubmit={analyze}
+        style={{ display: "flex", gap: "6px", marginBottom: "10px" }}
+      >
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="https://news.ycombinator.com/item?id=... or comment ID"
-          className="flex-1 rounded-lg border border-[#262626] bg-[#141414] px-4 py-3 text-sm text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-orange-500/50 transition-colors"
+          style={{
+            flex: 1,
+            border: "1px solid #e0e0e0",
+            padding: "4px 8px",
+            fontSize: "13px",
+            fontFamily: "Verdana, Geneva, sans-serif",
+            background: "#fff",
+          }}
         />
         <button
           type="submit"
           disabled={loading || !input.trim()}
-          className="rounded-lg bg-orange-600 px-8 py-3 text-sm font-medium text-white hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          style={{
+            backgroundColor: "#ff6600",
+            color: "#fff",
+            border: "none",
+            padding: "4px 16px",
+            fontSize: "13px",
+            fontWeight: "bold",
+            cursor: loading || !input.trim() ? "not-allowed" : "pointer",
+            opacity: loading || !input.trim() ? 0.5 : 1,
+          }}
         >
-          {loading ? "Analyzing..." : "Analyze"}
+          {loading ? "analyzing..." : "analyze"}
         </button>
       </form>
 
       {loading && (
-        <div className="text-center py-12 text-neutral-400">
-          <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-neutral-600 border-t-orange-500 mb-3" />
-          <p className="text-sm">Analyzing comment...</p>
+        <div style={{ color: "#828282", padding: "10px 0" }}>
+          Analyzing comment...
         </div>
       )}
 
       {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
+        <div
+          style={{
+            color: "#ff0000",
+            border: "1px solid #ff0000",
+            padding: "6px 10px",
+            marginBottom: "10px",
+            background: "#fff",
+          }}
+        >
           {error}
         </div>
       )}
 
       {result && (
-        <div className="rounded-lg border border-[#262626] bg-[#141414] p-6">
+        <div
+          style={{
+            border: "1px solid #e0e0e0",
+            background: "#fff",
+            padding: "10px",
+          }}
+        >
           {/* Header: verdict + score */}
-          <div className="flex items-center justify-between mb-5">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "8px",
+            }}
+          >
             <VerdictBadge
               verdict={result.verdict}
               confidence={result.confidence}
@@ -128,143 +163,139 @@ function CommentLookup() {
           </div>
 
           {/* Comment metadata */}
-          <div className="flex items-center gap-3 text-sm text-neutral-400 mb-4">
+          <div
+            style={{
+              fontSize: "12px",
+              color: "#828282",
+              marginBottom: "8px",
+            }}
+          >
             <a
               href={`https://news.ycombinator.com/user?id=${result.author}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-orange-500 hover:text-orange-400"
+              style={{ color: "#ff6600", fontWeight: "bold" }}
             >
               {result.author}
             </a>
-            <span>{date}</span>
+            <span style={{ marginLeft: "8px" }}>{date}</span>
             <a
               href={result.hnUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-neutral-500 hover:text-neutral-300 ml-auto"
+              style={{ color: "#828282", marginLeft: "8px" }}
             >
-              view on HN
+              (view on HN)
             </a>
           </div>
 
           {/* Comment text with highlighted phrases */}
-          <div className="text-sm text-neutral-300 leading-relaxed whitespace-pre-wrap mb-5 rounded-lg bg-[#0a0a0a] p-4 border border-[#1e1e1e]">
+          <div
+            style={{
+              fontSize: "13px",
+              whiteSpace: "pre-wrap",
+              marginBottom: "8px",
+              padding: "6px",
+              background: "#f6f6ef",
+              border: "1px solid #e0e0e0",
+              fontFamily: "Verdana, Geneva, sans-serif",
+            }}
+          >
             {highlightPhrases(result.cleanText, result.flaggedPhrases)}
           </div>
 
-          {/* Flagged phrases pills */}
+          {/* Flagged phrases */}
           {result.flaggedPhrases.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-5">
+            <div style={{ marginBottom: "8px" }}>
               {result.flaggedPhrases.map((fp, i) => (
                 <span
                   key={i}
-                  className="text-xs bg-yellow-500/10 text-yellow-500 rounded px-2 py-0.5"
+                  style={{
+                    color: "#ff6600",
+                    fontSize: "12px",
+                    marginRight: "8px",
+                  }}
                 >
-                  {fp.phrase} (+{fp.points})
+                  &quot;{fp.phrase}&quot; (+{fp.points})
                 </span>
               ))}
             </div>
           )}
 
-          {/* Score breakdown — always visible */}
+          {/* Score breakdown */}
           {result.breakdown.details.length > 0 && (
-            <div className="rounded-lg bg-[#0a0a0a] border border-[#1e1e1e] p-4">
-              <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-3">
-                Score Breakdown
-              </h3>
+            <div
+              style={{
+                background: "#f6f6ef",
+                border: "1px solid #e0e0e0",
+                padding: "8px",
+              }}
+            >
+              <b style={{ fontSize: "12px", color: "#828282" }}>
+                SCORE BREAKDOWN
+              </b>
 
-              {/* Category bars */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                <BreakdownBar
-                  label="Phrases"
-                  value={result.breakdown.phraseDetection}
-                  max={40}
-                />
-                <BreakdownBar
-                  label="Structure"
-                  value={result.breakdown.structuralSignals}
-                  max={20}
-                />
-                <BreakdownBar
-                  label="Timing"
-                  value={result.breakdown.timingSignals}
-                  max={50}
-                />
-                <BreakdownBar
-                  label="AI Detect"
-                  value={result.breakdown.openaiDetection}
-                  max={50}
-                />
-              </div>
+              {/* Category scores */}
+              <table
+                style={{
+                  width: "100%",
+                  fontSize: "12px",
+                  marginTop: "6px",
+                  marginBottom: "6px",
+                  borderCollapse: "collapse",
+                }}
+              >
+                <tbody>
+                  <tr>
+                    <td style={{ padding: "2px 8px 2px 0" }}>
+                      Phrases: <b>{result.breakdown.phraseDetection}</b>/40
+                    </td>
+                    <td style={{ padding: "2px 8px 2px 0" }}>
+                      Structure: <b>{result.breakdown.structuralSignals}</b>/20
+                    </td>
+                    <td style={{ padding: "2px 8px 2px 0" }}>
+                      Timing: <b>{result.breakdown.timingSignals}</b>/50
+                    </td>
+                    <td style={{ padding: "2px 0" }}>
+                      AI Detect: <b>{result.breakdown.openaiDetection}</b>/50
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
 
               {/* Detail lines */}
-              <ul className="space-y-1">
+              <ul
+                style={{
+                  margin: 0,
+                  paddingLeft: "20px",
+                  fontSize: "12px",
+                  color: "#828282",
+                }}
+              >
                 {result.breakdown.details.map((d, i) => (
-                  <li key={i} className="text-xs text-neutral-400 flex gap-2">
-                    <span className="text-neutral-600 select-none">&bull;</span>
-                    {d}
-                  </li>
+                  <li key={i}>{d}</li>
                 ))}
               </ul>
-
-              {result.breakdown.details.length === 0 && (
-                <p className="text-xs text-neutral-500">
-                  No signals fired — this comment looks human.
-                </p>
-              )}
             </div>
           )}
 
           {result.breakdown.details.length === 0 && (
-            <div className="rounded-lg bg-[#0a0a0a] border border-[#1e1e1e] p-4">
-              <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">
-                Score Breakdown
-              </h3>
-              <p className="text-xs text-neutral-500">
-                No signals fired — this comment looks human.
-              </p>
+            <div
+              style={{
+                background: "#f6f6ef",
+                border: "1px solid #e0e0e0",
+                padding: "8px",
+                fontSize: "12px",
+                color: "#828282",
+              }}
+            >
+              <b>SCORE BREAKDOWN</b>
+              <br />
+              No signals fired — this comment looks human.
             </div>
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function BreakdownBar({
-  label,
-  value,
-  max,
-}: {
-  label: string;
-  value: number;
-  max: number;
-}) {
-  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
-  const color =
-    value === 0
-      ? "bg-neutral-700"
-      : pct >= 60
-        ? "bg-red-500"
-        : pct >= 30
-          ? "bg-yellow-500"
-          : "bg-green-500";
-
-  return (
-    <div>
-      <div className="flex items-center justify-between text-xs text-neutral-400 mb-1">
-        <span>{label}</span>
-        <span className="tabular-nums">
-          {value}/{max}
-        </span>
-      </div>
-      <div className="h-1.5 rounded-full bg-[#1e1e1e] overflow-hidden">
-        <div
-          className={`h-full rounded-full ${color} transition-all`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
     </div>
   );
 }
@@ -314,64 +345,110 @@ function UsernameAnalyzer() {
 
   return (
     <div>
-      <div className="mb-4">
-        <h2 className="text-lg font-bold mb-1">Username Analyzer</h2>
-        <p className="text-neutral-400 text-sm">
+      <div style={{ marginBottom: "10px" }}>
+        <b style={{ fontSize: "14px" }}>Username Analyzer</b>
+        <br />
+        <span style={{ color: "#828282", fontSize: "12px" }}>
           Analyze all recent comments from an HN user for bot-like patterns.
-        </p>
+        </span>
       </div>
 
-      <form onSubmit={analyze} className="flex gap-3 mb-6">
+      <form
+        onSubmit={analyze}
+        style={{ display: "flex", gap: "6px", marginBottom: "10px" }}
+      >
         <input
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Enter HN username..."
-          className="flex-1 rounded-lg border border-[#262626] bg-[#141414] px-4 py-2.5 text-sm text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-orange-500/50 transition-colors"
+          style={{
+            flex: 1,
+            border: "1px solid #e0e0e0",
+            padding: "4px 8px",
+            fontSize: "13px",
+            fontFamily: "Verdana, Geneva, sans-serif",
+            background: "#fff",
+          }}
         />
         <button
           type="submit"
           disabled={loading || !username.trim()}
-          className="rounded-lg bg-orange-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          style={{
+            backgroundColor: "#ff6600",
+            color: "#fff",
+            border: "none",
+            padding: "4px 16px",
+            fontSize: "13px",
+            fontWeight: "bold",
+            cursor: loading || !username.trim() ? "not-allowed" : "pointer",
+            opacity: loading || !username.trim() ? 0.5 : 1,
+          }}
         >
-          {loading ? "Analyzing..." : "Analyze"}
+          {loading ? "analyzing..." : "analyze"}
         </button>
       </form>
 
       {loading && (
-        <div className="text-center py-8 text-neutral-400">
-          <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-neutral-600 border-t-orange-500 mb-3" />
-          <p className="text-sm">
-            Fetching and analyzing comments for{" "}
-            <strong>{username}</strong>...
-          </p>
+        <div style={{ color: "#828282", padding: "10px 0" }}>
+          Fetching and analyzing comments for <b>{username}</b>...
         </div>
       )}
 
       {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
+        <div
+          style={{
+            color: "#ff0000",
+            border: "1px solid #ff0000",
+            padding: "6px 10px",
+            marginBottom: "10px",
+            background: "#fff",
+          }}
+        >
           {error}
         </div>
       )}
 
       {result && (
         <div>
-          <div className="rounded-lg border border-[#262626] bg-[#141414] p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
+          <div
+            style={{
+              border: "1px solid #e0e0e0",
+              background: "#fff",
+              padding: "10px",
+              marginBottom: "10px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "8px",
+              }}
+            >
               <div>
-                <h3 className="text-lg font-semibold">
-                  <a
-                    href={`https://news.ycombinator.com/user?id=${result.username}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-orange-500 hover:text-orange-400"
-                  >
-                    {result.username}
-                  </a>
-                </h3>
-                <p className="text-sm text-neutral-400 mt-1">
+                <a
+                  href={`https://news.ycombinator.com/user?id=${result.username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "#ff6600",
+                    fontWeight: "bold",
+                    fontSize: "14px",
+                  }}
+                >
+                  {result.username}
+                </a>
+                <span
+                  style={{
+                    color: "#828282",
+                    fontSize: "12px",
+                    marginLeft: "8px",
+                  }}
+                >
                   {result.totalComments} comments analyzed
-                </p>
+                </span>
               </div>
               <VerdictBadge
                 verdict={result.verdict}
@@ -379,50 +456,81 @@ function UsernameAnalyzer() {
               />
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-              <div className="rounded-lg bg-[#0a0a0a] p-3">
-                <div className="text-2xl font-bold text-orange-500">
-                  {result.averageScore}
-                </div>
-                <div className="text-xs text-neutral-500 mt-1">
-                  Avg Bot Score
-                </div>
-              </div>
-              <div className="rounded-lg bg-[#0a0a0a] p-3">
-                <div className="text-2xl font-bold">
-                  {result.totalComments}
-                </div>
-                <div className="text-xs text-neutral-500 mt-1">Comments</div>
-              </div>
-              <div className="rounded-lg bg-[#0a0a0a] p-3">
-                <div className="text-2xl font-bold">
-                  {result.timingScore}
-                </div>
-                <div className="text-xs text-neutral-500 mt-1">
-                  Timing Score
-                </div>
-              </div>
-              <div className="rounded-lg bg-[#0a0a0a] p-3">
-                <div className="text-2xl font-bold">
-                  {result.similarityScore}
-                </div>
-                <div className="text-xs text-neutral-500 mt-1">
-                  Similarity Score
-                </div>
-              </div>
-            </div>
+            <table
+              style={{
+                width: "100%",
+                fontSize: "12px",
+                borderCollapse: "collapse",
+                marginBottom: "6px",
+              }}
+            >
+              <tbody>
+                <tr>
+                  <td
+                    style={{
+                      padding: "4px 8px",
+                      border: "1px solid #e0e0e0",
+                      textAlign: "center",
+                    }}
+                  >
+                    <b style={{ color: "#ff6600", fontSize: "16px" }}>
+                      {result.averageScore}
+                    </b>
+                    <br />
+                    <span style={{ color: "#828282" }}>avg bot score</span>
+                  </td>
+                  <td
+                    style={{
+                      padding: "4px 8px",
+                      border: "1px solid #e0e0e0",
+                      textAlign: "center",
+                    }}
+                  >
+                    <b style={{ fontSize: "16px" }}>{result.totalComments}</b>
+                    <br />
+                    <span style={{ color: "#828282" }}>comments</span>
+                  </td>
+                  <td
+                    style={{
+                      padding: "4px 8px",
+                      border: "1px solid #e0e0e0",
+                      textAlign: "center",
+                    }}
+                  >
+                    <b style={{ fontSize: "16px" }}>{result.timingScore}</b>
+                    <br />
+                    <span style={{ color: "#828282" }}>timing score</span>
+                  </td>
+                  <td
+                    style={{
+                      padding: "4px 8px",
+                      border: "1px solid #e0e0e0",
+                      textAlign: "center",
+                    }}
+                  >
+                    <b style={{ fontSize: "16px" }}>{result.similarityScore}</b>
+                    <br />
+                    <span style={{ color: "#828282" }}>similarity score</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
-            <div className="mt-4 flex justify-end">
-              <button
+            <div style={{ textAlign: "right" }}>
+              <span
                 onClick={exportJSON}
-                className="text-xs text-neutral-400 hover:text-neutral-200 border border-[#262626] rounded px-3 py-1.5 transition-colors"
+                style={{
+                  color: "#828282",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                }}
               >
-                Export JSON
-              </button>
+                [export json]
+              </span>
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div>
             {result.comments
               .sort((a, b) => b.score - a.score)
               .map((analysis, i) => (
@@ -444,7 +552,7 @@ export default function HomePage() {
       <CommentLookup />
 
       {/* Divider */}
-      <div className="my-12 border-t border-[#262626]" />
+      <hr style={{ border: "none", borderTop: "1px solid #ff6600", margin: "16px 0" }} />
 
       {/* Secondary: Username Analyzer */}
       <UsernameAnalyzer />

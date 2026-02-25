@@ -517,11 +517,21 @@ async function openaiDetection(
       }),
     });
 
-    if (!res.ok) return { score: 0, details: ["OpenAI API error"] };
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "(no body)");
+      console.error(`[openai] API error ${res.status}: ${errBody}`);
+      return { score: 0, details: [`OpenAI API error ${res.status}: ${errBody.slice(0, 120)}`] };
+    }
 
     const data = await res.json();
     const content = data.choices?.[0]?.message?.content || "";
-    const parsed = JSON.parse(content);
+    let parsed: { score: number; reasons: string[] };
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      console.error(`[openai] Failed to parse response: ${content}`);
+      return { score: 0, details: [`OpenAI parse error: ${content.slice(0, 120)}`] };
+    }
     const weighted = Math.round(parsed.score * 0.5);
 
     return {
@@ -531,8 +541,10 @@ async function openaiDetection(
         ...parsed.reasons.map((r: string) => `  - ${r}`),
       ],
     };
-  } catch {
-    return { score: 0, details: ["OpenAI detection failed"] };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[openai] Unexpected error: ${msg}`);
+    return { score: 0, details: [`OpenAI detection failed: ${msg}`] };
   }
 }
 
@@ -572,15 +584,25 @@ ${text}`,
       }),
     });
 
-    if (!res.ok) return { score: 0, details: ["Anthropic API error"] };
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "(no body)");
+      console.error(`[anthropic] API error ${res.status}: ${errBody}`);
+      return { score: 0, details: [`Anthropic API error ${res.status}: ${errBody.slice(0, 120)}`] };
+    }
 
     const data = await res.json();
     const content = data.content?.[0]?.text || "";
 
     // strip any markdown code fences if present
     const jsonStr = content.replace(/```json?\n?|\n?```/g, "").trim();
-    const parsed = JSON.parse(jsonStr);
-    const weighted = Math.round(parsed.score * 0.6); // slightly higher weight than OpenAI
+    let parsed: { score: number; reasons: string[] };
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      console.error(`[anthropic] Failed to parse response: ${content}`);
+      return { score: 0, details: [`Anthropic parse error: ${content.slice(0, 120)}`] };
+    }
+    const weighted = Math.round(parsed.score * 0.6);
 
     return {
       score: weighted,
@@ -589,8 +611,10 @@ ${text}`,
         ...parsed.reasons.map((r: string) => `  - ${r}`),
       ],
     };
-  } catch {
-    return { score: 0, details: ["Anthropic detection failed"] };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[anthropic] Unexpected error: ${msg}`);
+    return { score: 0, details: [`Anthropic detection failed: ${msg}`] };
   }
 }
 

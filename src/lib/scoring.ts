@@ -342,6 +342,30 @@ function detectArrow(text: string): {
   };
 }
 
+function detectThreeParagraphStructure(text: string): {
+  score: number;
+  details: string[];
+} {
+  const paragraphs = text.split(/\n\n+/).map((p) => p.trim()).filter((p) => p.length > 0);
+  if (paragraphs.length !== 3) return { score: 0, details: [] };
+
+  // Count sentences per paragraph (split on . ! ? followed by space or end)
+  const sentenceCount = (p: string) =>
+    (p.match(/[.!?](?:\s|$)/g) || []).length || 1;
+
+  const counts = paragraphs.map(sentenceCount);
+  const allShort = counts.every((c) => c <= 2);
+
+  if (!allShort) return { score: 0, details: [] };
+
+  return {
+    score: 20,
+    details: [
+      `Classic 3-paragraph structure (${counts.join("/")}) sentences each (+20)`,
+    ],
+  };
+}
+
 function detectFalsePersonalFraming(text: string): {
   score: number;
   details: string[];
@@ -538,6 +562,9 @@ export function getPhraseMatches(text: string): string[] {
   const { score: framingScore } = detectFalsePersonalFraming(text);
   if (framingScore > 0) result.push("false personal framing");
 
+  const { score: threeParaScore } = detectThreeParagraphStructure(text);
+  if (threeParaScore > 0) result.push("3-paragraph structure");
+
   return result;
 }
 
@@ -558,6 +585,7 @@ export async function scoreComment(
   const enDash = detectEnDash(cleanText);
   const arrow = detectArrow(cleanText);
   const falseFraming = detectFalsePersonalFraming(cleanText);
+  const threePara = detectThreeParagraphStructure(cleanText);
   const openai = useOpenAI
     ? await openaiDetection(cleanText)
     : { score: 0, details: [] };
@@ -575,6 +603,7 @@ export async function scoreComment(
         enDash.score +
         arrow.score +
         falseFraming.score +
+        threePara.score +
         openai.score
     )
   );
@@ -599,6 +628,7 @@ export async function scoreComment(
       ...enDash.details,
       ...arrow.details,
       ...falseFraming.details,
+      ...threePara.details,
       ...openai.details,
     ],
   };

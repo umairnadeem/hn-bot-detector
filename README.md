@@ -36,7 +36,7 @@ LLM phrase vocabulary includes:
 
 ### 3. Unicode/Typographic Signals
 
-- **Curly/smart quotes** `" " ' '` (U+201C/D, U+2018/9) (+8 each, max +20) — LLMs output Unicode quotes, humans type ASCII
+- **Curly/smart quotes** `" " ' '` (U+201C/D, U+2018/9) (+8 each, max +20) — LLMs output Unicode typographic quotes by default. Humans typing into a browser text box almost never produce these — keyboards output straight ASCII `"` and `'`. Finding curly quotes in a plain-text HN comment is a strong signal the text was generated elsewhere and pasted in.
 - **Em dash** `—` (U+2014) (+5 each, max +15) — LLMs overuse the em dash
 - **En-dash** `–` (U+2013) as separator (+5 each, max +15) — used when users prompt LLMs to replace em dashes
 - **Rightwards arrow** `→` (U+2192) (+10 each, max +20) — strong LLM signal for showing logical flow

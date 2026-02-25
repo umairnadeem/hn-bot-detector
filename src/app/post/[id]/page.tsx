@@ -127,6 +127,7 @@ export default function PostAnalysisPage() {
             }}
           >
             <div
+              className="hn-commenter-row"
               onClick={() =>
                 setExpandedUser(
                   expandedUser === commenter.username
@@ -142,7 +143,7 @@ export default function PostAnalysisPage() {
                 cursor: "pointer",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                 <ScoreBadge score={commenter.averageScore} />
                 <a
                   href={`https://news.ycombinator.com/user?id=${commenter.username}`}

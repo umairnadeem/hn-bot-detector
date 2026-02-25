@@ -32,6 +32,58 @@ interface AlgoliaItem {
   points: number | null;
 }
 
+// POST /api/analyze/comment — analyze raw pasted text (no HN URL needed)
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const text: string = body.text || "";
+
+    if (!text.trim() || text.trim().length < 10) {
+      return NextResponse.json(
+        { error: "Please provide at least 10 characters of text" },
+        { status: 400 }
+      );
+    }
+
+    const hnComment = {
+      objectID: "manual",
+      author: "unknown",
+      comment_text: text,
+      story_title: null,
+      story_id: null,
+      parent_id: null,
+      created_at: new Date().toISOString(),
+      created_at_i: Math.floor(Date.now() / 1000),
+      points: null,
+      num_comments: null,
+    };
+
+    const useOpenAI = !!process.env.OPENAI_API_KEY;
+    const analysis = await scoreComment(hnComment, useOpenAI);
+    const { verdict, confidence } = getVerdict(analysis.score);
+
+    const result: SingleCommentAnalysis = {
+      commentId: "manual",
+      author: "unknown",
+      commentText: text,
+      cleanText: stripHtml(text),
+      storyTitle: null,
+      createdAt: new Date().toISOString(),
+      score: analysis.score,
+      verdict,
+      confidence,
+      breakdown: analysis.breakdown,
+      flaggedPhrases: analysis.flaggedPhrases,
+      hnUrl: null,
+    };
+
+    return NextResponse.json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id");
 

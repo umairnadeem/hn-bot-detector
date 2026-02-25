@@ -85,5 +85,5 @@ export interface SingleCommentAnalysis {
   confidence: number;
   breakdown: ScoringBreakdown;
   flaggedPhrases: FlaggedPhrase[];
-  hnUrl: string;
+  hnUrl: string | null;
 }

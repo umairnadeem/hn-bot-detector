@@ -61,6 +61,7 @@ export default function PostScanPage() {
 
       <form
         onSubmit={analyze}
+        className="hn-form"
         style={{ display: "flex", gap: "6px", marginBottom: "10px" }}
       >
         <input
@@ -70,6 +71,7 @@ export default function PostScanPage() {
           placeholder="Enter HN post ID or URL..."
           style={{
             flex: 1,
+            minWidth: 0,
             border: "1px solid #e0e0e0",
             padding: "4px 8px",
             fontSize: "13px",
@@ -89,6 +91,7 @@ export default function PostScanPage() {
             fontWeight: "bold",
             cursor: loading || !input.trim() ? "not-allowed" : "pointer",
             opacity: loading || !input.trim() ? 0.5 : 1,
+            whiteSpace: "nowrap",
           }}
         >
           {loading ? "scanning..." : "scan"}
@@ -171,6 +174,7 @@ export default function PostScanPage() {
                 }}
               >
                 <div
+                  className="hn-commenter-row"
                   onClick={() =>
                     setExpandedUser(
                       expandedUser === commenter.username
@@ -191,6 +195,7 @@ export default function PostScanPage() {
                       display: "flex",
                       alignItems: "center",
                       gap: "10px",
+                      minWidth: 0,
                     }}
                   >
                     <ScoreBadge score={commenter.averageScore} />

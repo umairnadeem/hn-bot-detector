@@ -28,6 +28,12 @@
   box-sizing: border-box;
 }
 
+/* prevent horizontal overflow from long words/URLs */
+body {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
 html, body {
   background-color: #f6f6ef !important;
   color: #000000 !important;
@@ -74,4 +80,50 @@ button, input[type="submit"] {
   border: 1px solid #ccc;
   cursor: pointer;
   padding: 2px 8px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .hn-main-table {
+    width: 100% !important;
+    margin-top: 0 !important;
+  }
+
+  body {
+    padding: 0 4px !important;
+  }
+
+  /* stack forms vertically */
+  .hn-form {
+    flex-direction: column !important;
+  }
+
+  .hn-form input[type="text"] {
+    width: 100% !important;
+  }
+
+  .hn-form button {
+    width: 100% !important;
+  }
+
+  /* score breakdown table: horizontal scroll */
+  .hn-breakdown-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* commenter row: wrap on small screens */
+  .hn-commenter-row {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+
+  /* stats table cells */
+  .hn-stats-table td {
+    display: block !important;
+    width: 100% !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
 }

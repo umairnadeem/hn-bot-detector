@@ -34,23 +34,33 @@ function highlightPhrases(text: string, phrases: { phrase: string }[]) {
 // --- Comment Lookup (Hero) ---
 
 function CommentLookup() {
+  const [mode, setMode] = useState<"url" | "text">("url");
   const [input, setInput] = useState("");
+  const [rawText, setRawText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SingleCommentAnalysis | null>(null);
 
   async function analyze(e: React.FormEvent) {
     e.preventDefault();
-    if (!input.trim()) return;
+    const value = mode === "url" ? input.trim() : rawText.trim();
+    if (!value) return;
 
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      const res = await fetch(
-        `/api/analyze/comment?id=${encodeURIComponent(input.trim())}`
-      );
+      let res: Response;
+      if (mode === "url") {
+        res = await fetch(`/api/analyze/comment?id=${encodeURIComponent(value)}`);
+      } else {
+        res = await fetch("/api/analyze/comment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: value }),
+        });
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Analysis failed");
       setResult(data);
@@ -71,51 +81,110 @@ function CommentLookup() {
       })
     : "";
 
+  const tabStyle = (active: boolean) => ({
+    display: "inline-block",
+    padding: "2px 10px",
+    cursor: "pointer",
+    borderBottom: active ? "2px solid #ff6600" : "2px solid transparent",
+    fontWeight: active ? "bold" as const : "normal" as const,
+    color: active ? "#000" : "#828282",
+    fontSize: "9pt",
+    marginRight: "4px",
+    userSelect: "none" as const,
+  });
+
+  const hasValue = mode === "url" ? input.trim() : rawText.trim();
+
   return (
     <div>
-      <div style={{ marginBottom: "10px" }}>
-        <b style={{ fontSize: "14px" }}>Is this comment written by an LLM?</b>
-        <br />
-        <span style={{ color: "#828282", fontSize: "12px" }}>
-          Paste any Hacker News comment URL or ID to see how it scores for
-          LLM-like patterns.
+      <div style={{ marginBottom: "8px" }}>
+        <b>Is this comment written by an LLM?</b>
+      </div>
+
+      {/* tabs */}
+      <div style={{ marginBottom: "8px", borderBottom: "1px solid #e0e0e0" }}>
+        <span onClick={() => { setMode("url"); setResult(null); setError(null); }} style={tabStyle(mode === "url")}>
+          HN url / id
+        </span>
+        <span onClick={() => { setMode("text"); setResult(null); setError(null); }} style={tabStyle(mode === "text")}>
+          paste text
         </span>
       </div>
 
-      <form
-        onSubmit={analyze}
-        style={{ display: "flex", gap: "6px", marginBottom: "10px" }}
-      >
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="https://news.ycombinator.com/item?id=... or comment ID"
-          style={{
-            flex: 1,
-            border: "1px solid #e0e0e0",
-            padding: "4px 8px",
-            fontSize: "13px",
-            fontFamily: "Verdana, Geneva, sans-serif",
-            background: "#fff",
-          }}
-        />
-        <button
-          type="submit"
-          disabled={loading || !input.trim()}
-          style={{
-            backgroundColor: "#ff6600",
-            color: "#fff",
-            border: "none",
-            padding: "4px 16px",
-            fontSize: "13px",
-            fontWeight: "bold",
-            cursor: loading || !input.trim() ? "not-allowed" : "pointer",
-            opacity: loading || !input.trim() ? 0.5 : 1,
-          }}
-        >
-          {loading ? "analyzing..." : "analyze"}
-        </button>
+      <form onSubmit={analyze} style={{ marginBottom: "10px" }}>
+        {mode === "url" ? (
+          <div style={{ display: "flex", gap: "6px" }}>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="https://news.ycombinator.com/item?id=... or comment ID"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                border: "1px solid #e0e0e0",
+                padding: "4px 8px",
+                fontSize: "9pt",
+                fontFamily: "Verdana, Geneva, sans-serif",
+                background: "#fff",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={loading || !hasValue}
+              style={{
+                backgroundColor: "#ff6600",
+                color: "#000",
+                border: "none",
+                padding: "4px 16px",
+                fontSize: "9pt",
+                fontWeight: "bold",
+                cursor: loading || !hasValue ? "not-allowed" : "pointer",
+                opacity: loading || !hasValue ? 0.5 : 1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {loading ? "analyzing..." : "analyze"}
+            </button>
+          </div>
+        ) : (
+          <div>
+            <textarea
+              value={rawText}
+              onChange={(e) => setRawText(e.target.value)}
+              placeholder="Paste any comment text here..."
+              rows={6}
+              style={{
+                width: "100%",
+                border: "1px solid #e0e0e0",
+                padding: "4px 8px",
+                fontSize: "9pt",
+                fontFamily: "Verdana, Geneva, sans-serif",
+                background: "#fff",
+                resize: "vertical",
+                display: "block",
+                marginBottom: "6px",
+                boxSizing: "border-box",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={loading || !hasValue}
+              style={{
+                backgroundColor: "#ff6600",
+                color: "#000",
+                border: "none",
+                padding: "4px 16px",
+                fontSize: "9pt",
+                fontWeight: "bold",
+                cursor: loading || !hasValue ? "not-allowed" : "pointer",
+                opacity: loading || !hasValue ? 0.5 : 1,
+              }}
+            >
+              {loading ? "analyzing..." : "analyze"}
+            </button>
+          </div>
+        )}
       </form>
 
       {loading && (
@@ -237,6 +306,7 @@ function CommentLookup() {
 
               {/* Category scores */}
               <table
+                className="hn-breakdown-table"
                 style={{
                   width: "100%",
                   fontSize: "12px",
@@ -369,6 +439,7 @@ function UsernameAnalyzer() {
 
       <form
         onSubmit={analyze}
+        className="hn-form"
         style={{ display: "flex", gap: "6px", marginBottom: "10px" }}
       >
         <input
@@ -378,6 +449,7 @@ function UsernameAnalyzer() {
           placeholder="Enter HN username..."
           style={{
             flex: 1,
+            minWidth: 0,
             border: "1px solid #e0e0e0",
             padding: "4px 8px",
             fontSize: "13px",
@@ -397,6 +469,7 @@ function UsernameAnalyzer() {
             fontWeight: "bold",
             cursor: loading || !username.trim() ? "not-allowed" : "pointer",
             opacity: loading || !username.trim() ? 0.5 : 1,
+            whiteSpace: "nowrap",
           }}
         >
           {loading ? "analyzing..." : "analyze"}
@@ -471,6 +544,7 @@ function UsernameAnalyzer() {
             </div>
 
             <table
+              className="hn-stats-table"
               style={{
                 width: "100%",
                 fontSize: "12px",

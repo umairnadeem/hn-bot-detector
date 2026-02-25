@@ -16,11 +16,14 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <table
+          className="hn-main-table"
           style={{
             width: "85%",
+            maxWidth: "900px",
             margin: "0 auto",
             borderSpacing: 0,
             borderCollapse: "collapse",
+            marginTop: "10px",
           }}
         >
           <tbody>

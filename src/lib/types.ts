@@ -29,6 +29,10 @@ export interface FlaggedPhrase {
 export interface ScoringBreakdown {
   phraseDetection: number;
   structuralSignals: number;
+  curlyQuotes: number;
+  numberedLists: number;
+  examplesInThrees: number;
+  emDashOveruse: number;
   timingSignals: number;
   semanticSimilarity: number;
   openaiDetection: number;

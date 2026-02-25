@@ -260,6 +260,20 @@ function CommentLookup() {
                       AI Detect: <b>{result.breakdown.openaiDetection}</b>/50
                     </td>
                   </tr>
+                  <tr>
+                    <td style={{ padding: "2px 8px 2px 0" }}>
+                      Curly quotes: <b>{result.breakdown.curlyQuotes}</b>/20
+                    </td>
+                    <td style={{ padding: "2px 8px 2px 0" }}>
+                      Numbered lists: <b>{result.breakdown.numberedLists}</b>/25
+                    </td>
+                    <td style={{ padding: "2px 8px 2px 0" }}>
+                      Threes: <b>{result.breakdown.examplesInThrees}</b>/12
+                    </td>
+                    <td style={{ padding: "2px 0" }}>
+                      Em dash: <b>{result.breakdown.emDashOveruse}</b>/15
+                    </td>
+                  </tr>
                 </tbody>
               </table>
 

@@ -9,83 +9,186 @@ import {
   Verdict,
 } from "./types";
 
-// --- Phrase Detection ---
+// --- LLM-Characteristic Phrases ---
 
-const BOT_PHRASES: { pattern: RegExp; points: number; label: string }[] = [
-  { pattern: /\bat its core\b/gi, points: 10, label: "at its core" },
-  {
-    pattern: /\bit is worth noting\b/gi,
-    points: 10,
-    label: "it is worth noting",
-  },
-  { pattern: /\bimportantly\b/gi, points: 5, label: "importantly" },
-  { pattern: /\bin conclusion\b/gi, points: 10, label: "in conclusion" },
-  {
-    pattern: /\bit is important to\b/gi,
-    points: 10,
-    label: "it is important to",
-  },
-  {
-    pattern: /\bthis is particularly\b/gi,
-    points: 8,
-    label: "this is particularly",
-  },
-  { pattern: /\bit is crucial\b/gi, points: 10, label: "it is crucial" },
-  { pattern: /\bfundamentally\b/gi, points: 8, label: "fundamentally" },
-  {
-    pattern: /\bI think it is safe to say\b/gi,
-    points: 15,
-    label: "I think it is safe to say",
-  },
-  {
-    pattern: /\bone could argue\b/gi,
-    points: 10,
-    label: "one could argue",
-  },
-  {
-    pattern: /\bbroadly speaking\b/gi,
-    points: 10,
-    label: "broadly speaking",
-  },
-  {
-    pattern: /^Additionally,/gim,
-    points: 8,
-    label: 'Sentence starting with "Additionally,"',
-  },
-  {
-    pattern: /^Furthermore,/gim,
-    points: 8,
-    label: 'Sentence starting with "Furthermore,"',
-  },
-  {
-    pattern: /^Moreover,/gim,
-    points: 8,
-    label: 'Sentence starting with "Moreover,"',
-  },
+const LLM_PHRASES: string[] = [
+  "at its core",
+  "it is worth noting",
+  "importantly",
+  "in conclusion",
+  "it is important to note",
+  "this is particularly",
+  "it is crucial",
+  "fundamentally",
+  "one could argue",
+  "broadly speaking",
+  "additionally",
+  "furthermore",
+  "moreover",
+  "in summary",
+  "to summarize",
+  "it goes without saying",
+  "needless to say",
+  "it is essential",
+  "in this context",
+  "with that said",
+  "that being said",
+  "having said that",
+  "on the other hand",
+  "in other words",
+  "to put it simply",
+  "it is worth mentioning",
+  "as previously mentioned",
+  "as noted above",
+  "delve into",
+  "in the realm of",
+  "landscape",
+  "paradigm",
+  "leverage",
+  "utilize",
+  "robust",
+  "seamless",
+  "cutting-edge",
+  "game-changer",
+  "holistic",
+  "synergy",
+  "scalable",
+  "streamline",
+  "foster",
+  "empower",
+  "revolutionize",
+  "transformative",
 ];
+
+// --- Character N-gram TF-IDF Vector Similarity ---
+
+interface NGramVector {
+  [ngram: string]: number;
+}
+
+function charNgrams(text: string, n: number): string[] {
+  const normalized = text.toLowerCase().replace(/[^a-z0-9 ]/g, "");
+  const grams: string[] = [];
+  for (let i = 0; i <= normalized.length - n; i++) {
+    grams.push(normalized.substring(i, i + n));
+  }
+  return grams;
+}
+
+function buildNgramVector(text: string): NGramVector {
+  const vec: NGramVector = {};
+  // Use character n-grams of sizes 2, 3, and 4
+  for (const n of [2, 3, 4]) {
+    for (const gram of charNgrams(text, n)) {
+      vec[gram] = (vec[gram] || 0) + 1;
+    }
+  }
+  // Normalize to TF
+  const values = Object.values(vec);
+  const total = values.reduce((a, b) => a + b, 0) || 1;
+  for (const k of Object.keys(vec)) {
+    vec[k] /= total;
+  }
+  return vec;
+}
+
+function cosineSim(a: NGramVector, b: NGramVector): number {
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (const k of Object.keys(a)) {
+    const av = a[k];
+    normA += av * av;
+    if (b[k] !== undefined) {
+      dot += av * b[k];
+    }
+  }
+  for (const k of Object.keys(b)) {
+    normB += b[k] * b[k];
+  }
+
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  return denom === 0 ? 0 : dot / denom;
+}
+
+// Pre-compute vectors for all LLM phrases
+const PHRASE_VECTORS: { phrase: string; vector: NGramVector }[] =
+  LLM_PHRASES.map((phrase) => ({
+    phrase,
+    vector: buildNgramVector(phrase),
+  }));
+
+// Points assigned per phrase by category
+const PHRASE_POINTS: Record<string, number> = {};
+for (const p of LLM_PHRASES) {
+  // Multi-word phrases get more points than single-word buzzwords
+  PHRASE_POINTS[p] = p.includes(" ") ? 10 : 6;
+}
+
+function extractWordWindows(text: string): { window: string; index: number }[] {
+  const words = text.split(/\s+/);
+  const windows: { window: string; index: number }[] = [];
+  let charPos = 0;
+
+  for (let i = 0; i < words.length; i++) {
+    // Find actual position of this word in original text
+    const wordStart = text.indexOf(words[i], charPos);
+    charPos = wordStart + words[i].length;
+
+    // Generate windows of size 2 through 5 (bigrams to 5-grams)
+    for (let size = 2; size <= 5 && i + size <= words.length; size++) {
+      const windowWords = words.slice(i, i + size);
+      windows.push({
+        window: windowWords.join(" "),
+        index: wordStart,
+      });
+    }
+    // Also include single words (for single-word buzzwords)
+    windows.push({ window: words[i], index: wordStart });
+  }
+
+  return windows;
+}
+
+const SIMILARITY_THRESHOLD = 0.75;
 
 function detectPhrases(text: string): {
   score: number;
   flagged: FlaggedPhrase[];
   details: string[];
+  matchedPhrases: string[];
 } {
   let score = 0;
   const flagged: FlaggedPhrase[] = [];
   const details: string[] = [];
+  const matchedPhrases: string[] = [];
+  const alreadyMatched = new Set<string>();
 
-  for (const { pattern, points, label } of BOT_PHRASES) {
-    // Reset regex state
-    pattern.lastIndex = 0;
-    let match;
-    while ((match = pattern.exec(text)) !== null) {
-      score += points;
-      flagged.push({
-        phrase: label,
-        index: match.index,
-        length: match[0].length,
-        points,
-      });
-      details.push(`Phrase "${label}" detected (+${points})`);
+  const windows = extractWordWindows(text);
+
+  for (const { window, index } of windows) {
+    const windowVec = buildNgramVector(window);
+
+    for (const { phrase, vector } of PHRASE_VECTORS) {
+      if (alreadyMatched.has(phrase)) continue;
+
+      const sim = cosineSim(windowVec, vector);
+      if (sim >= SIMILARITY_THRESHOLD) {
+        const pts = PHRASE_POINTS[phrase];
+        score += pts;
+        alreadyMatched.add(phrase);
+        matchedPhrases.push(phrase);
+        flagged.push({
+          phrase,
+          index,
+          length: window.length,
+          points: pts,
+        });
+        details.push(
+          `Phrase "${phrase}" detected (similarity ${sim.toFixed(2)}) (+${pts})`
+        );
+      }
     }
   }
 
@@ -93,8 +196,7 @@ function detectPhrases(text: string): {
   const paragraphs = text.split(/\n\n+/).filter((p) => p.trim().length > 0);
   if (paragraphs.length === 3) {
     const [first, , third] = paragraphs;
-    const hasThesis =
-      first.length < 300 && !first.includes("\n");
+    const hasThesis = first.length < 300 && !first.includes("\n");
     const hasConclusion =
       /\b(in conclusion|overall|ultimately|in summary|to summarize)\b/i.test(
         third
@@ -105,7 +207,111 @@ function detectPhrases(text: string): {
     }
   }
 
-  return { score: Math.min(score, 40), flagged, details };
+  return { score: Math.min(score, 40), flagged, details, matchedPhrases };
+}
+
+// --- New Signals ---
+
+function detectCurlyQuotes(text: string): {
+  score: number;
+  details: string[];
+} {
+  const curlyPattern = /[\u201C\u201D\u2018\u2019]/g;
+  const matches = text.match(curlyPattern);
+  const count = matches ? matches.length : 0;
+  if (count === 0) return { score: 0, details: [] };
+
+  const pts = Math.min(count * 8, 20);
+  return {
+    score: pts,
+    details: [`Smart/curly quotes detected (${count} found) (+${pts})`],
+  };
+}
+
+function detectNumberedLists(text: string): {
+  score: number;
+  details: string[];
+} {
+  // Detect numbered list items: lines starting with "N. " or inline "N. "
+  const numberedItems = text.match(/(?:^|\n)\s*(\d+)\.\s/g);
+  if (!numberedItems || numberedItems.length < 2) return { score: 0, details: [] };
+
+  // Extract the actual numbers to verify sequential pattern
+  const numbers = numberedItems.map((m) => {
+    const match = m.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  });
+
+  // Check that it starts with 1 and has 2
+  const has1 = numbers.includes(1);
+  const has2 = numbers.includes(2);
+  if (!has1 || !has2) return { score: 0, details: [] };
+
+  const itemCount = numbers.length;
+  const pts = itemCount >= 3 ? 25 : 15;
+  return {
+    score: pts,
+    details: [
+      `Numbered list detected (${itemCount} items) (+${pts})`,
+    ],
+  };
+}
+
+function detectExamplesInThrees(text: string): {
+  score: number;
+  details: string[];
+} {
+  // Pattern 1: "for example, X, Y, and Z"
+  const forExampleThree =
+    /for example,?\s+\w[\w\s]*,\s+\w[\w\s]*,\s+and\s+\w/i;
+
+  // Pattern 2: "such as X, Y, and Z"
+  const suchAsThree = /such as\s+\w[\w\s]*,\s+\w[\w\s]*,\s+and\s+\w/i;
+
+  // Pattern 3: "X, Y, and Z" — generic three-item comma list ending with "and"
+  const threeItemList = /\w+,\s+\w+,\s+and\s+\w+/i;
+
+  // Pattern 4: exactly 3 bullet/numbered points (but not more)
+  const bulletPoints = text.match(/(?:^|\n)\s*[-•*]\s+.+/g);
+  const exactlyThreeBullets = bulletPoints && bulletPoints.length === 3;
+
+  if (
+    forExampleThree.test(text) ||
+    suchAsThree.test(text) ||
+    exactlyThreeBullets
+  ) {
+    return {
+      score: 12,
+      details: ["Examples in threes pattern detected (+12)"],
+    };
+  }
+
+  // For the generic 3-item list, only count if there are multiple such patterns
+  const threeItemMatches = text.match(
+    /\w+,\s+\w+,\s+and\s+\w+/gi
+  );
+  if (threeItemMatches && threeItemMatches.length >= 2) {
+    return {
+      score: 12,
+      details: ["Multiple three-item lists detected (+12)"],
+    };
+  }
+
+  return { score: 0, details: [] };
+}
+
+function detectEmDashOveruse(text: string): {
+  score: number;
+  details: string[];
+} {
+  const emDashCount = (text.match(/\u2014/g) || []).length;
+  if (emDashCount === 0) return { score: 0, details: [] };
+
+  const pts = Math.min(emDashCount * 5, 15);
+  return {
+    score: pts,
+    details: [`Em dash overuse (${emDashCount} found) (+${pts})`],
+  };
 }
 
 // --- Structural Signals ---
@@ -123,13 +329,6 @@ function analyzeStructure(text: string): {
   if (!commonContractions.test(text) && text.length > 100) {
     score += 10;
     details.push("No contractions used (+10)");
-  }
-
-  // Em dash usage
-  const emDashCount = (text.match(/—/g) || []).length;
-  if (emDashCount >= 2) {
-    score += 5;
-    details.push(`Liberal em dash usage (${emDashCount} found) (+5)`);
   }
 
   // Word count consistency check (for single comment, just flag the range)
@@ -249,6 +448,36 @@ async function openaiDetection(
   }
 }
 
+// --- Exported: Get Phrase Matches ---
+
+export function getPhraseMatches(text: string): string[] {
+  const { matchedPhrases } = detectPhrases(text);
+  const result = [...matchedPhrases];
+
+  // Also include new signal pattern labels
+  const curlyQuotePattern = /[\u201C\u201D\u2018\u2019]/g;
+  if (curlyQuotePattern.test(text)) {
+    result.push("smart/curly quotes");
+  }
+
+  const numberedItems = text.match(/(?:^|\n)\s*(\d+)\.\s/g);
+  if (numberedItems && numberedItems.length >= 2) {
+    result.push("numbered list");
+  }
+
+  const { score: threesScore } = detectExamplesInThrees(text);
+  if (threesScore > 0) {
+    result.push("examples in threes");
+  }
+
+  const emDashCount = (text.match(/\u2014/g) || []).length;
+  if (emDashCount > 0) {
+    result.push("em dash overuse");
+  }
+
+  return result;
+}
+
 // --- Main Scoring Pipeline ---
 
 export async function scoreComment(
@@ -259,22 +488,47 @@ export async function scoreComment(
 
   const phrase = detectPhrases(cleanText);
   const structure = analyzeStructure(cleanText);
+  const curlyQuotes = detectCurlyQuotes(cleanText);
+  const numberedLists = detectNumberedLists(cleanText);
+  const examplesInThrees = detectExamplesInThrees(cleanText);
+  const emDash = detectEmDashOveruse(cleanText);
   const openai = useOpenAI
     ? await openaiDetection(cleanText)
     : { score: 0, details: [] };
 
   const totalScore = Math.min(
     100,
-    Math.max(0, phrase.score + structure.score + openai.score)
+    Math.max(
+      0,
+      phrase.score +
+        structure.score +
+        curlyQuotes.score +
+        numberedLists.score +
+        examplesInThrees.score +
+        emDash.score +
+        openai.score
+    )
   );
 
   const breakdown: ScoringBreakdown = {
     phraseDetection: phrase.score,
     structuralSignals: structure.score,
+    curlyQuotes: curlyQuotes.score,
+    numberedLists: numberedLists.score,
+    examplesInThrees: examplesInThrees.score,
+    emDashOveruse: emDash.score,
     timingSignals: 0,
     semanticSimilarity: 0,
     openaiDetection: openai.score,
-    details: [...phrase.details, ...structure.details, ...openai.details],
+    details: [
+      ...phrase.details,
+      ...structure.details,
+      ...curlyQuotes.details,
+      ...numberedLists.details,
+      ...examplesInThrees.details,
+      ...emDash.details,
+      ...openai.details,
+    ],
   };
 
   return {

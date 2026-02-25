@@ -67,3 +67,18 @@ export interface PostAnalysis {
     comments: CommentAnalysis[];
   }[];
 }
+
+export interface SingleCommentAnalysis {
+  commentId: string;
+  author: string;
+  commentText: string;
+  cleanText: string;
+  storyTitle: string | null;
+  createdAt: string;
+  score: number;
+  verdict: Verdict;
+  confidence: number;
+  breakdown: ScoringBreakdown;
+  flaggedPhrases: FlaggedPhrase[];
+  hnUrl: string;
+}

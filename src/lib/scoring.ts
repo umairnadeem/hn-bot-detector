@@ -369,7 +369,7 @@ export async function analyzeUser(
   };
 }
 
-function getVerdict(score: number): { verdict: Verdict; confidence: number } {
+export function getVerdict(score: number): { verdict: Verdict; confidence: number } {
   if (score >= 60) {
     return {
       verdict: "LIKELY BOT",

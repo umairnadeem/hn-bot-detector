@@ -536,6 +536,64 @@ async function openaiDetection(
   }
 }
 
+// --- Anthropic Detection (optional) ---
+
+async function anthropicDetection(
+  text: string
+): Promise<{ score: number; details: string[] }> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return { score: 0, details: [] };
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5",
+        max_tokens: 256,
+        messages: [
+          {
+            role: "user",
+            content: `Analyze this Hacker News comment and determine if it was written by an LLM or a human. Look for telltale signs: perfect structure, LLM phrases, lack of genuine personal voice, hedging language, curly quotes, numbered lists, examples in threes, em dashes, false personal framing like "in practice I've found", and closing moves like "the question is whether".
+
+Reply with JSON only, no other text:
+{"score": 0-100, "reasons": ["reason1", "reason2", "reason3"]}
+
+Where 0 = definitely human, 100 = definitely LLM.
+
+Comment to analyze:
+${text}`,
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) return { score: 0, details: ["Anthropic API error"] };
+
+    const data = await res.json();
+    const content = data.content?.[0]?.text || "";
+
+    // strip any markdown code fences if present
+    const jsonStr = content.replace(/```json?\n?|\n?```/g, "").trim();
+    const parsed = JSON.parse(jsonStr);
+    const weighted = Math.round(parsed.score * 0.6); // slightly higher weight than OpenAI
+
+    return {
+      score: weighted,
+      details: [
+        `Anthropic detection: ${parsed.score}/100 (weighted: ${weighted})`,
+        ...parsed.reasons.map((r: string) => `  - ${r}`),
+      ],
+    };
+  } catch {
+    return { score: 0, details: ["Anthropic detection failed"] };
+  }
+}
+
 // --- Exported: Get Phrase Matches ---
 
 export function getPhraseMatches(text: string): string[] {
@@ -597,6 +655,7 @@ export async function scoreComment(
   const openai = useOpenAI
     ? await openaiDetection(cleanText)
     : { score: 0, details: [] };
+  const anthropic = await anthropicDetection(cleanText);
 
   const totalScore = Math.min(
     100,
@@ -612,7 +671,8 @@ export async function scoreComment(
         arrow.score +
         falseFraming.score +
         threePara.score +
-        openai.score
+        openai.score +
+        anthropic.score
     )
   );
 
@@ -626,6 +686,7 @@ export async function scoreComment(
     timingSignals: 0,
     semanticSimilarity: 0,
     openaiDetection: openai.score,
+    anthropicDetection: anthropic.score,
     details: [
       ...phrase.details,
       ...structure.details,
@@ -638,6 +699,7 @@ export async function scoreComment(
       ...falseFraming.details,
       ...threePara.details,
       ...openai.details,
+      ...anthropic.details,
     ],
   };
 

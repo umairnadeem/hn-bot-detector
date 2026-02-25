@@ -36,6 +36,7 @@ export interface ScoringBreakdown {
   timingSignals: number;
   semanticSimilarity: number;
   openaiDetection: number;
+  anthropicDetection: number;
   details: string[];
 }
 

@@ -58,6 +58,14 @@ const LLM_PHRASES: string[] = [
   "empower",
   "revolutionize",
   "transformative",
+  "is the real insight here",
+  "is the key insight",
+  "the real insight is",
+  "the key takeaway",
+  "the real question is",
+  "the key unlock",
+  "the core insight",
+  "the underlying insight",
 ];
 
 // --- Character N-gram TF-IDF Vector Similarity ---

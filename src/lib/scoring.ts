@@ -314,6 +314,62 @@ function detectEmDashOveruse(text: string): {
   };
 }
 
+function detectEnDash(text: string): {
+  score: number;
+  details: string[];
+} {
+  // En-dash (–) used as a clause separator — LLMs substitute this for em-dash
+  const enDashCount = (text.match(/\u2013/g) || []).length;
+  if (enDashCount === 0) return { score: 0, details: [] };
+  const pts = Math.min(enDashCount * 5, 15);
+  return {
+    score: pts,
+    details: [`En-dash used as separator (${enDashCount} found) (+${pts})`],
+  };
+}
+
+function detectArrow(text: string): {
+  score: number;
+  details: string[];
+} {
+  // → (U+2192) is a strong LLM signal — used to show logical flow
+  const arrowCount = (text.match(/\u2192/g) || []).length;
+  if (arrowCount === 0) return { score: 0, details: [] };
+  const pts = Math.min(arrowCount * 10, 20);
+  return {
+    score: pts,
+    details: [`Rightwards arrow → used (${arrowCount} found) (+${pts})`],
+  };
+}
+
+function detectFalsePersonalFraming(text: string): {
+  score: number;
+  details: string[];
+} {
+  // LLMs fake personal experience then pivot to generic claims
+  const falsePhrases = [
+    /in practice,?\s+i'?ve found/i,
+    /in my experience,?\s+(the|this|it|most|many)/i,
+    /i'?ve noticed that\s+(the|this|it|most|many)/i,
+    /the question is whether/i,
+    /what remains to be seen/i,
+    /time will tell (whether|if)/i,
+  ];
+
+  const matched: string[] = [];
+  for (const re of falsePhrases) {
+    const m = text.match(re);
+    if (m) matched.push(m[0]);
+  }
+
+  if (matched.length === 0) return { score: 0, details: [] };
+  const pts = Math.min(matched.length * 8, 20);
+  return {
+    score: pts,
+    details: matched.map((m) => `False personal framing: "${m}" (+8)`),
+  };
+}
+
 // --- Structural Signals ---
 
 function analyzeStructure(text: string): {
@@ -471,9 +527,16 @@ export function getPhraseMatches(text: string): string[] {
   }
 
   const emDashCount = (text.match(/\u2014/g) || []).length;
-  if (emDashCount > 0) {
-    result.push("em dash overuse");
-  }
+  if (emDashCount > 0) result.push("em dash overuse");
+
+  const enDashCount = (text.match(/\u2013/g) || []).length;
+  if (enDashCount > 0) result.push("en-dash as separator");
+
+  const arrowCount = (text.match(/\u2192/g) || []).length;
+  if (arrowCount > 0) result.push("→ arrow used");
+
+  const { score: framingScore } = detectFalsePersonalFraming(text);
+  if (framingScore > 0) result.push("false personal framing");
 
   return result;
 }
@@ -492,6 +555,9 @@ export async function scoreComment(
   const numberedLists = detectNumberedLists(cleanText);
   const examplesInThrees = detectExamplesInThrees(cleanText);
   const emDash = detectEmDashOveruse(cleanText);
+  const enDash = detectEnDash(cleanText);
+  const arrow = detectArrow(cleanText);
+  const falseFraming = detectFalsePersonalFraming(cleanText);
   const openai = useOpenAI
     ? await openaiDetection(cleanText)
     : { score: 0, details: [] };
@@ -506,6 +572,9 @@ export async function scoreComment(
         numberedLists.score +
         examplesInThrees.score +
         emDash.score +
+        enDash.score +
+        arrow.score +
+        falseFraming.score +
         openai.score
     )
   );
@@ -527,6 +596,9 @@ export async function scoreComment(
       ...numberedLists.details,
       ...examplesInThrees.details,
       ...emDash.details,
+      ...enDash.details,
+      ...arrow.details,
+      ...falseFraming.details,
       ...openai.details,
     ],
   };

@@ -414,7 +414,21 @@ function detectFalsePersonalFraming(text: string): {
   };
 }
 
-function analyzeStructure(text: string): {
+function stripQuotes(text: string): { userText: string; hasQuotes: boolean } {
+  const lines = text.split("\n");
+  const userLines: string[] = [];
+  let hasQuotes = false;
+  for (const line of lines) {
+    if (/^>/.test(line.trim())) {
+      hasQuotes = true;
+    } else {
+      userLines.push(line);
+    }
+  }
+  return { userText: userLines.join("\n").trim(), hasQuotes };
+}
+
+function analyzeStructure(text: string, hasQuotes = false): {
   score: number;
   details: string[];
 } {
@@ -441,6 +455,11 @@ function analyzeStructure(text: string): {
   if (personalAnecdotes.test(text)) {
     score -= 10;
     details.push("Personal anecdote detected (-10)");
+  }
+
+  if (hasQuotes) {
+    score -= 10;
+    details.push("Quote-reply detected (human signal) (-10)");
   }
 
   return { score: Math.max(score, 0), details };
@@ -628,18 +647,19 @@ export async function scoreComment(
   useOpenAI = false
 ): Promise<CommentAnalysis> {
   const cleanText = stripHtml(comment.comment_text || "");
+  const { userText, hasQuotes } = stripQuotes(cleanText);
 
-  const phrase = detectPhrases(cleanText);
-  const structure = analyzeStructure(cleanText);
-  const curlyQuotes = detectCurlyQuotes(cleanText);
-  const numberedLists = detectNumberedLists(cleanText);
-  const examplesInThrees = detectExamplesInThrees(cleanText);
-  const emDash = detectEmDashOveruse(cleanText);
-  const enDash = detectEnDash(cleanText);
-  const arrow = detectArrow(cleanText);
-  const falseFraming = detectFalsePersonalFraming(cleanText);
-  const threePara = detectThreeParagraphStructure(cleanText);
-  const sycophancy = detectSycophancy(cleanText);
+  const phrase = detectPhrases(userText);
+  const structure = analyzeStructure(userText, hasQuotes);
+  const curlyQuotes = detectCurlyQuotes(userText);
+  const numberedLists = detectNumberedLists(userText);
+  const examplesInThrees = detectExamplesInThrees(userText);
+  const emDash = detectEmDashOveruse(userText);
+  const enDash = detectEnDash(userText);
+  const arrow = detectArrow(userText);
+  const falseFraming = detectFalsePersonalFraming(userText);
+  const threePara = detectThreeParagraphStructure(userText);
+  const sycophancy = detectSycophancy(userText);
   const openai = useOpenAI
     ? await openaiDetection(cleanText)
     : { score: 0, details: [] };

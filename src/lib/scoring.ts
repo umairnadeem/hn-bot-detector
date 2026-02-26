@@ -345,6 +345,48 @@ function detectThreeParagraphStructure(text: string): {
   };
 }
 
+function detectSycophancy(text: string): {
+  score: number;
+  details: string[];
+} {
+  const firstSentence = text.split(/(?<=[.!?])\s/)[0].trim();
+
+  // Sycophantic/generic openers as first sentence
+  const sycophancyOpeners = [
+    /^(this|that|the \w[\w\s]{0,30}) is (really |quite |very |so )?(interesting|fascinating|impressive|insightful|brilliant|excellent|a great|a good|a solid)/i,
+    /^(great|nice|good|excellent|solid|fantastic|brilliant|cool|neat) (point|post|write-?up|article|question|observation|analysis|approach|insight|summary|overview)/i,
+    /^interesting (point|observation|approach|question|analysis|take|perspective|idea|detail)/i,
+    /^(well said|well written|well put|well done|good stuff|good work|nicely done)/i,
+  ];
+
+  const isSycophantic = sycophancyOpeners.some(p => p.test(firstSentence));
+
+  // Content-free generic follow-up questions
+  const genericQuestions =
+    /\bhow do you (handle|deal with|approach|manage|implement|think about)\b/i.test(text) ||
+    /\bwhat('s| is) your (approach|take|experience|plan|strategy|opinion) (to|on|with|about|for)\b/i.test(text) ||
+    /\bhave you (considered|thought about|looked at|tried|explored)\b/i.test(text) ||
+    /\bdo you (have|plan|intend|support|handle)\b.*\?/i.test(text);
+
+  // High-signal combo: sycophantic opener + dash + question
+  const dashThenQuestion = /[—–][^—–]+\?/.test(text);
+
+  if (isSycophantic && dashThenQuestion) {
+    return { score: 20, details: ["Sycophantic opener + dash + question structure (+20)"] };
+  }
+  if (isSycophantic && genericQuestions) {
+    return { score: 15, details: ["Sycophantic opener + generic follow-up question (+15)"] };
+  }
+  if (isSycophantic) {
+    return { score: 10, details: ["Sycophantic/generic opener (+10)"] };
+  }
+  if (genericQuestions && dashThenQuestion) {
+    return { score: 10, details: ["Generic question after dash (+10)"] };
+  }
+
+  return { score: 0, details: [] };
+}
+
 function detectFalsePersonalFraming(text: string): {
   score: number;
   details: string[];
@@ -597,6 +639,7 @@ export async function scoreComment(
   const arrow = detectArrow(cleanText);
   const falseFraming = detectFalsePersonalFraming(cleanText);
   const threePara = detectThreeParagraphStructure(cleanText);
+  const sycophancy = detectSycophancy(cleanText);
   const openai = useOpenAI
     ? await openaiDetection(cleanText)
     : { score: 0, details: [] };
@@ -616,6 +659,7 @@ export async function scoreComment(
         arrow.score +
         falseFraming.score +
         threePara.score +
+        sycophancy.score +
         openai.score +
         anthropic.score
     )
@@ -643,6 +687,7 @@ export async function scoreComment(
       ...arrow.details,
       ...falseFraming.details,
       ...threePara.details,
+      ...sycophancy.details,
       ...openai.details,
       ...anthropic.details,
     ],

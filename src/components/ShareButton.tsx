@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 interface ShareButtonProps {
   type: "comment" | "paste" | "user" | "post";
@@ -12,8 +12,15 @@ export function ShareButton({ type, result, meta }: ShareButtonProps) {
   const [status, setStatus] = useState<
     "idle" | "loading" | "copied" | "error"
   >("idle");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function share() {
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const share = useCallback(async () => {
     setStatus("loading");
     try {
       const res = await fetch("/api/share", {
@@ -27,12 +34,12 @@ export function ShareButton({ type, result, meta }: ShareButtonProps) {
       const url = `${window.location.origin}${data.url}`;
       await navigator.clipboard.writeText(url);
       setStatus("copied");
-      setTimeout(() => setStatus("idle"), 2000);
+      timerRef.current = setTimeout(() => setStatus("idle"), 2000);
     } catch {
       setStatus("error");
-      setTimeout(() => setStatus("idle"), 2000);
+      timerRef.current = setTimeout(() => setStatus("idle"), 2000);
     }
-  }
+  }, [type, result, meta]);
 
   const label =
     status === "loading"

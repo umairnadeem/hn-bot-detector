@@ -1,4 +1,6 @@
-export function ScoreBadge({ score }: { score: number }) {
+import { memo } from "react";
+
+export const ScoreBadge = memo(function ScoreBadge({ score }: { score: number }) {
   const color =
     score >= 60
       ? "#ff0000"
@@ -11,4 +13,4 @@ export function ScoreBadge({ score }: { score: number }) {
       [score: {score}]
     </span>
   );
-}
+});

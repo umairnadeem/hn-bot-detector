@@ -1,6 +1,7 @@
+import { memo } from "react";
 import { Verdict } from "@/lib/types";
 
-export function VerdictBadge({
+export const VerdictBadge = memo(function VerdictBadge({
   verdict,
   confidence,
 }: {
@@ -18,4 +19,4 @@ export function VerdictBadge({
       {verdict} ({confidence}%)
     </span>
   );
-}
+});

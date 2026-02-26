@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { CommentAnalysis, Verdict } from "@/lib/types";
 import { getVerdict } from "@/lib/scoring";
 import { CommentCard } from "./CommentCard";
@@ -18,6 +18,21 @@ interface Commenter {
 export function CommenterList({ commenters }: { commenters: Commenter[] }) {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
 
+  const toggleUser = useCallback((username: string) => {
+    setExpandedUser((prev) => (prev === username ? null : username));
+  }, []);
+
+  const sortedCommentsMap = useMemo(() => {
+    const map = new Map<string, CommentAnalysis[]>();
+    for (const commenter of commenters) {
+      map.set(
+        commenter.username,
+        [...commenter.comments].sort((a, b) => b.score - a.score)
+      );
+    }
+    return map;
+  }, [commenters]);
+
   return (
     <div>
       {commenters.map((commenter) => {
@@ -33,13 +48,7 @@ export function CommenterList({ commenters }: { commenters: Commenter[] }) {
           >
             <div
               className="hn-commenter-row"
-              onClick={() =>
-                setExpandedUser(
-                  expandedUser === commenter.username
-                    ? null
-                    : commenter.username
-                )
-              }
+              onClick={() => toggleUser(commenter.username)}
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -84,11 +93,14 @@ export function CommenterList({ commenters }: { commenters: Commenter[] }) {
                   padding: "6px 10px",
                 }}
               >
-                {commenter.comments
-                  .sort((a, b) => b.score - a.score)
-                  .map((analysis, i) => (
-                    <CommentCard key={i} analysis={analysis} />
-                  ))}
+                {(sortedCommentsMap.get(commenter.username) ?? []).map(
+                  (analysis) => (
+                    <CommentCard
+                      key={analysis.comment.objectID}
+                      analysis={analysis}
+                    />
+                  )
+                )}
               </div>
             )}
           </div>

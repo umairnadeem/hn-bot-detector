@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   SingleCommentAnalysis,
   UserAnalysis,
@@ -13,15 +14,19 @@ import { CommenterList } from "@/components/CommenterList";
 import { PostSummary } from "@/components/PostSummary";
 
 function CommentResult({ result }: { result: SingleCommentAnalysis }) {
-  const date = result.createdAt
-    ? new Date(result.createdAt).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "";
+  const date = useMemo(
+    () =>
+      result.createdAt
+        ? new Date(result.createdAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "",
+    [result.createdAt]
+  );
 
   return (
     <div
@@ -92,9 +97,9 @@ function CommentResult({ result }: { result: SingleCommentAnalysis }) {
 
       {result.flaggedPhrases.length > 0 && (
         <div style={{ marginBottom: "8px" }}>
-          {result.flaggedPhrases.map((fp, i) => (
+          {result.flaggedPhrases.map((fp) => (
             <span
-              key={i}
+              key={fp.phrase}
               style={{
                 color: "#ff6600",
                 fontSize: "12px",
@@ -165,8 +170,8 @@ function CommentResult({ result }: { result: SingleCommentAnalysis }) {
               color: "#828282",
             }}
           >
-            {result.breakdown.details.map((d, i) => (
-              <li key={i}>{d}</li>
+            {result.breakdown.details.map((d) => (
+              <li key={d}>{d}</li>
             ))}
           </ul>
         </div>
@@ -190,6 +195,11 @@ function CommentResult({ result }: { result: SingleCommentAnalysis }) {
 }
 
 function UserResult({ result }: { result: UserAnalysis }) {
+  const sortedComments = useMemo(
+    () => [...result.comments].sort((a, b) => b.score - a.score),
+    [result.comments]
+  );
+
   return (
     <div>
       <div
@@ -300,11 +310,9 @@ function UserResult({ result }: { result: UserAnalysis }) {
       </div>
 
       <div>
-        {result.comments
-          .sort((a, b) => b.score - a.score)
-          .map((analysis, i) => (
-            <CommentCard key={i} analysis={analysis} />
-          ))}
+        {sortedComments.map((analysis) => (
+          <CommentCard key={analysis.comment.objectID} analysis={analysis} />
+        ))}
       </div>
     </div>
   );

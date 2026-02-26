@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { UserAnalysis, SingleCommentAnalysis } from "@/lib/types";
 import { exportJSON } from "@/lib/utils";
 import { CommentCard } from "@/components/CommentCard";
@@ -8,80 +8,95 @@ import { HighlightedText } from "@/components/HighlightedText";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { ScoreBadge } from "@/components/ScoreBadge";
 import { ShareButton } from "@/components/ShareButton";
+import { useAnalysis } from "@/hooks/useAnalysis";
 
 function CommentLookup() {
   const [mode, setMode] = useState<"url" | "text">("url");
   const [input, setInput] = useState("");
   const [rawText, setRawText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<SingleCommentAnalysis | null>(null);
+  const { loading, error, result, analyze, reset } =
+    useAnalysis<SingleCommentAnalysis>();
 
-  async function analyze(e: React.FormEvent) {
-    e.preventDefault();
-    const value = mode === "url" ? input.trim() : rawText.trim();
-    if (!value) return;
+  const handleAnalyze = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const value = mode === "url" ? input.trim() : rawText.trim();
+      if (!value) return;
 
-    setLoading(true);
-    setError(null);
-    setResult(null);
+      analyze(async () => {
+        const res =
+          mode === "url"
+            ? await fetch(
+                `/api/analyze/comment?id=${encodeURIComponent(value)}`
+              )
+            : await fetch("/api/analyze/comment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: value }),
+              });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Analysis failed");
+        return data;
+      });
+    },
+    [mode, input, rawText, analyze]
+  );
 
-    try {
-      const res =
-        mode === "url"
-          ? await fetch(
-              `/api/analyze/comment?id=${encodeURIComponent(value)}`
-            )
-          : await fetch("/api/analyze/comment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text: value }),
-            });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Analysis failed");
-      setResult(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const switchToUrl = useCallback(() => {
+    setMode("url");
+    reset();
+  }, [reset]);
 
-  const date = result
-    ? new Date(result.createdAt).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "";
+  const switchToText = useCallback(() => {
+    setMode("text");
+    reset();
+  }, [reset]);
 
-  const tabStyle = (active: boolean): React.CSSProperties => ({
-    display: "inline-block",
-    padding: "2px 10px",
-    cursor: "pointer",
-    borderBottom: active ? "2px solid #ff6600" : "2px solid transparent",
-    fontWeight: active ? "bold" : "normal",
-    color: active ? "#000" : "#828282",
-    fontSize: "9pt",
-    marginRight: "4px",
-    userSelect: "none",
-  });
+  const date = useMemo(
+    () =>
+      result
+        ? new Date(result.createdAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "",
+    [result]
+  );
+
+  const tabStyle = useCallback(
+    (active: boolean): React.CSSProperties => ({
+      display: "inline-block",
+      padding: "2px 10px",
+      cursor: "pointer",
+      borderBottom: active ? "2px solid #ff6600" : "2px solid transparent",
+      fontWeight: active ? "bold" : "normal",
+      color: active ? "#000" : "#828282",
+      fontSize: "9pt",
+      marginRight: "4px",
+      userSelect: "none",
+    }),
+    []
+  );
 
   const hasValue = mode === "url" ? input.trim() : rawText.trim();
 
-  const buttonStyle: React.CSSProperties = {
-    backgroundColor: "#ff6600",
-    color: "#000",
-    border: "none",
-    padding: "4px 16px",
-    fontSize: "9pt",
-    fontWeight: "bold",
-    cursor: loading || !hasValue ? "not-allowed" : "pointer",
-    opacity: loading || !hasValue ? 0.5 : 1,
-    whiteSpace: "nowrap",
-  };
+  const buttonStyle = useMemo<React.CSSProperties>(
+    () => ({
+      backgroundColor: "#ff6600",
+      color: "#000",
+      border: "none",
+      padding: "4px 16px",
+      fontSize: "9pt",
+      fontWeight: "bold",
+      cursor: loading || !hasValue ? "not-allowed" : "pointer",
+      opacity: loading || !hasValue ? 0.5 : 1,
+      whiteSpace: "nowrap",
+    }),
+    [loading, hasValue]
+  );
 
   return (
     <div>
@@ -90,29 +105,15 @@ function CommentLookup() {
       </div>
 
       <div style={{ marginBottom: "8px", borderBottom: "1px solid #e0e0e0" }}>
-        <span
-          onClick={() => {
-            setMode("url");
-            setResult(null);
-            setError(null);
-          }}
-          style={tabStyle(mode === "url")}
-        >
+        <span onClick={switchToUrl} style={tabStyle(mode === "url")}>
           HN url / id
         </span>
-        <span
-          onClick={() => {
-            setMode("text");
-            setResult(null);
-            setError(null);
-          }}
-          style={tabStyle(mode === "text")}
-        >
+        <span onClick={switchToText} style={tabStyle(mode === "text")}>
           paste text
         </span>
       </div>
 
-      <form onSubmit={analyze} style={{ marginBottom: "10px" }}>
+      <form onSubmit={handleAnalyze} style={{ marginBottom: "10px" }}>
         {mode === "url" ? (
           <div style={{ display: "flex", gap: "6px" }}>
             <input
@@ -251,9 +252,9 @@ function CommentLookup() {
 
           {result.flaggedPhrases.length > 0 && (
             <div style={{ marginBottom: "8px" }}>
-              {result.flaggedPhrases.map((fp, i) => (
+              {result.flaggedPhrases.map((fp) => (
                 <span
-                  key={i}
+                  key={fp.phrase}
                   style={{
                     color: "#ff6600",
                     fontSize: "12px",
@@ -328,8 +329,8 @@ function CommentLookup() {
                   color: "#828282",
                 }}
               >
-                {result.breakdown.details.map((d, i) => (
-                  <li key={i}>{d}</li>
+                {result.breakdown.details.map((d) => (
+                  <li key={d}>{d}</li>
                 ))}
               </ul>
             </div>
@@ -368,31 +369,35 @@ function CommentLookup() {
 
 function UsernameAnalyzer() {
   const [username, setUsername] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<UserAnalysis | null>(null);
+  const { loading, error, result, analyze } = useAnalysis<UserAnalysis>();
 
-  async function analyze(e: React.FormEvent) {
-    e.preventDefault();
-    if (!username.trim()) return;
+  const handleAnalyze = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!username.trim()) return;
 
-    setLoading(true);
-    setError(null);
-    setResult(null);
+      analyze(async () => {
+        const res = await fetch(
+          `/api/analyze/user?username=${encodeURIComponent(username.trim())}`
+        );
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Analysis failed");
+        return data;
+      });
+    },
+    [username, analyze]
+  );
 
-    try {
-      const res = await fetch(
-        `/api/analyze/user?username=${encodeURIComponent(username.trim())}`
-      );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Analysis failed");
-      setResult(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setLoading(false);
+  const handleExportJSON = useCallback(() => {
+    if (result) {
+      exportJSON(result, `hn-bot-analysis-${result.username}.json`);
     }
-  }
+  }, [result]);
+
+  const sortedComments = useMemo(
+    () => (result ? [...result.comments].sort((a, b) => b.score - a.score) : []),
+    [result]
+  );
 
   return (
     <div>
@@ -405,7 +410,7 @@ function UsernameAnalyzer() {
       </div>
 
       <form
-        onSubmit={analyze}
+        onSubmit={handleAnalyze}
         className="hn-form"
         style={{ display: "flex", gap: "6px", marginBottom: "10px" }}
       >
@@ -575,12 +580,7 @@ function UsernameAnalyzer() {
 
             <div style={{ textAlign: "right" }}>
               <span
-                onClick={() =>
-                  exportJSON(
-                    result,
-                    `hn-bot-analysis-${result.username}.json`
-                  )
-                }
+                onClick={handleExportJSON}
                 style={{
                   color: "#828282",
                   fontSize: "12px",
@@ -600,11 +600,12 @@ function UsernameAnalyzer() {
           </div>
 
           <div>
-            {result.comments
-              .sort((a, b) => b.score - a.score)
-              .map((analysis, i) => (
-                <CommentCard key={i} analysis={analysis} />
-              ))}
+            {sortedComments.map((analysis) => (
+              <CommentCard
+                key={analysis.comment.objectID}
+                analysis={analysis}
+              />
+            ))}
           </div>
         </div>
       )}

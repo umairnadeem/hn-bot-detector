@@ -1,37 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { PostAnalysis } from "@/lib/types";
 import { CommenterList } from "@/components/CommenterList";
 import { PostSummary } from "@/components/PostSummary";
+import { useAnalysis } from "@/hooks/useAnalysis";
 
 export default function PostScanPage() {
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<PostAnalysis | null>(null);
+  const { loading, error, result, analyze } = useAnalysis<PostAnalysis>();
 
-  async function analyze(e: React.FormEvent) {
-    e.preventDefault();
-    if (!input.trim()) return;
+  const handleAnalyze = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!input.trim()) return;
 
-    setLoading(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const res = await fetch(
-        `/api/analyze/post?id=${encodeURIComponent(input.trim())}`
-      );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Analysis failed");
-      setResult(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  }
+      analyze(async () => {
+        const res = await fetch(
+          `/api/analyze/post?id=${encodeURIComponent(input.trim())}`
+        );
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Analysis failed");
+        return data;
+      });
+    },
+    [input, analyze]
+  );
 
   return (
     <div>
@@ -44,7 +38,7 @@ export default function PostScanPage() {
       </div>
 
       <form
-        onSubmit={analyze}
+        onSubmit={handleAnalyze}
         className="hn-form"
         style={{ display: "flex", gap: "6px", marginBottom: "10px" }}
       >

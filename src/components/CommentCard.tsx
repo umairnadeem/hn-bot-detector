@@ -1,21 +1,27 @@
 "use client";
 
+import { useMemo, useState, useCallback } from "react";
 import { CommentAnalysis } from "@/lib/types";
 import { HighlightedText } from "./HighlightedText";
 import { ScoreBadge } from "./ScoreBadge";
-import { useState } from "react";
 
 export function CommentCard({ analysis }: { analysis: CommentAnalysis }) {
   const [expanded, setExpanded] = useState(false);
   const { comment, score, breakdown, flaggedPhrases, cleanText } = analysis;
 
-  const date = new Date(comment.created_at).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const date = useMemo(
+    () =>
+      new Date(comment.created_at).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [comment.created_at]
+  );
+
+  const handleExpand = useCallback(() => setExpanded(true), []);
 
   return (
     <div style={{ borderBottom: "1px solid #e0e0e0", padding: "6px 0" }}>
@@ -60,7 +66,7 @@ export function CommentCard({ analysis }: { analysis: CommentAnalysis }) {
               phrases={flaggedPhrases}
             />
             <span
-              onClick={() => setExpanded(true)}
+              onClick={handleExpand}
               style={{
                 color: "#ff6600",
                 cursor: "pointer",
@@ -77,9 +83,9 @@ export function CommentCard({ analysis }: { analysis: CommentAnalysis }) {
 
       {flaggedPhrases.length > 0 && (
         <div style={{ marginBottom: "4px" }}>
-          {flaggedPhrases.map((fp, i) => (
+          {flaggedPhrases.map((fp) => (
             <span
-              key={i}
+              key={fp.phrase}
               style={{
                 color: "#ff6600",
                 fontSize: "12px",
@@ -96,8 +102,8 @@ export function CommentCard({ analysis }: { analysis: CommentAnalysis }) {
         <details style={{ fontSize: "12px", color: "#828282" }}>
           <summary style={{ cursor: "pointer" }}>scoring breakdown</summary>
           <ul style={{ marginTop: "4px", paddingLeft: "20px" }}>
-            {breakdown.details.map((d, i) => (
-              <li key={i}>{d}</li>
+            {breakdown.details.map((d) => (
+              <li key={d}>{d}</li>
             ))}
           </ul>
         </details>

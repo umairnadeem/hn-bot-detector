@@ -1,13 +1,18 @@
 "use client";
 
+import { useMemo, useCallback } from "react";
 import { PostAnalysis } from "@/lib/types";
 import { exportJSON } from "@/lib/utils";
 
 export function PostSummary({ result }: { result: PostAnalysis }) {
-  const totalComments = result.commenters.reduce(
-    (sum, c) => sum + c.commentCount,
-    0
+  const totalComments = useMemo(
+    () => result.commenters.reduce((sum, c) => sum + c.commentCount, 0),
+    [result.commenters]
   );
+
+  const handleExportJSON = useCallback(() => {
+    exportJSON(result, `hn-post-analysis-${result.postId}.json`);
+  }, [result]);
 
   return (
     <div
@@ -36,9 +41,7 @@ export function PostSummary({ result }: { result: PostAnalysis }) {
           </span>
         </div>
         <span
-          onClick={() =>
-            exportJSON(result, `hn-post-analysis-${result.postId}.json`)
-          }
+          onClick={handleExportJSON}
           style={{
             color: "#828282",
             fontSize: "12px",

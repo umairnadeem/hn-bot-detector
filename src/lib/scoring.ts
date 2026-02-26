@@ -522,18 +522,18 @@ async function anthropicDetection(
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5",
-        max_tokens: 256,
+        max_tokens: 512,
         messages: [
           {
             role: "user",
-            content: `Analyze this Hacker News comment and determine if it was written by an LLM or a human. Look for telltale signs: perfect structure, LLM phrases, lack of genuine personal voice, hedging language, curly quotes, numbered lists, examples in threes, em dashes, false personal framing like "in practice I've found", and closing moves like "the question is whether".
+            content: `Is this Hacker News comment written by an LLM? Check for: perfect structure, LLM filler phrases, curly quotes, numbered lists, examples in threes, em/en dashes, false personal framing ("in practice I've found..."), closing moves ("the question is whether..."), no contractions.
 
-Reply with JSON only, no other text:
+Reply with JSON only — keep each reason under 6 words:
 {"score": 0-100, "reasons": ["reason1", "reason2", "reason3"]}
 
-Where 0 = definitely human, 100 = definitely LLM.
+0 = definitely human, 100 = definitely LLM.
 
-Comment to analyze:
+Comment:
 ${text}`,
           },
         ],
@@ -554,6 +554,14 @@ ${text}`,
     try {
       parsed = JSON.parse(jsonStr);
     } catch {
+      // Response may have been truncated — try to salvage the score
+      const scoreMatch = jsonStr.match(/"score"\s*:\s*(\d+)/);
+      if (scoreMatch) {
+        const score = parseInt(scoreMatch[1], 10);
+        console.error(`[anthropic] Partial parse — salvaged score ${score}: ${content.slice(0, 120)}`);
+        const weighted = Math.round(score * 0.6);
+        return { score: weighted, details: [`Anthropic detection: ${score}/100 (weighted: ${weighted}, partial response)`] };
+      }
       console.error(`[anthropic] Failed to parse response: ${content}`);
       return { score: 0, details: [`Anthropic parse error: ${content.slice(0, 120)}`] };
     }

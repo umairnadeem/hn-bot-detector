@@ -6,7 +6,17 @@ create table if not exists shares (
   created_at timestamptz not null default now()
 );
 
--- index for lookups by id (already covered by primary key)
--- index for analytics by type
 create index if not exists shares_type_idx on shares (type);
 create index if not exists shares_created_at_idx on shares (created_at desc);
+
+-- RLS: anyone can read, only service role can write
+-- (API routes use SUPABASE_SERVICE_ROLE_KEY which bypasses RLS,
+--  so server-side inserts work fine)
+alter table shares enable row level security;
+
+create policy "public read"
+  on shares for select
+  using (true);
+
+-- no insert/update/delete policy for anon/authenticated roles
+-- only service_role (bypasses RLS) can write

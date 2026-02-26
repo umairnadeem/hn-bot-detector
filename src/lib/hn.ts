@@ -6,7 +6,7 @@ export async function fetchUserComments(
   username: string,
   hitsPerPage = 50
 ): Promise<HNComment[]> {
-  const url = `${BASE_URL}/search?tags=comment,author_${encodeURIComponent(username)}&hitsPerPage=${hitsPerPage}`;
+  const url = `${BASE_URL}/search_by_date?tags=comment,author_${encodeURIComponent(username)}&hitsPerPage=${hitsPerPage}`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`HN API error: ${res.status} ${res.statusText}`);

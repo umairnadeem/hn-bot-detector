@@ -7,6 +7,7 @@ import { CommentCard } from "@/components/CommentCard";
 import { HighlightedText } from "@/components/HighlightedText";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { ScoreBadge } from "@/components/ScoreBadge";
+import { ShareButton } from "@/components/ShareButton";
 
 function CommentLookup() {
   const [mode, setMode] = useState<"url" | "text">("url");
@@ -347,6 +348,18 @@ function CommentLookup() {
               No signals fired — this comment looks human.
             </div>
           )}
+
+          <div style={{ marginTop: "8px", textAlign: "right" }}>
+            <ShareButton
+              type={mode === "url" ? "comment" : "paste"}
+              result={result}
+              meta={
+                result.hnUrl
+                  ? { hnUrl: result.hnUrl, username: result.author }
+                  : undefined
+              }
+            />
+          </div>
         </div>
       )}
     </div>
@@ -575,6 +588,13 @@ function UsernameAnalyzer() {
                 }}
               >
                 [export json]
+              </span>
+              <span style={{ marginLeft: "8px" }}>
+                <ShareButton
+                  type="user"
+                  result={result}
+                  meta={{ username: result.username }}
+                />
               </span>
             </div>
           </div>

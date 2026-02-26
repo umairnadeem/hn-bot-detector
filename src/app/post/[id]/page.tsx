@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { PostAnalysis } from "@/lib/types";
 import { CommenterList } from "@/components/CommenterList";
 import { PostSummary } from "@/components/PostSummary";
+import { ShareButton } from "@/components/ShareButton";
 
 export default function PostAnalysisPage() {
   const params = useParams();
@@ -60,6 +61,13 @@ export default function PostAnalysisPage() {
     <div>
       <PostSummary result={result} />
       <CommenterList commenters={result.commenters} />
+      <div style={{ marginTop: "8px", textAlign: "right" }}>
+        <ShareButton
+          type="post"
+          result={result}
+          meta={{ postId: result.postId }}
+        />
+      </div>
     </div>
   );
 }

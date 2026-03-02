@@ -1,5 +1,7 @@
 # HN Bot Detector
 
+Deployed at https://hn-bot-detector.vercel.app/
+
 Detects LLM-generated comments on Hacker News. Paste a comment URL, ID, or raw text and get a score plus a breakdown of which signals fired.
 
 Built after getting banned from HN for LLM-assisted posting. This is penance.
